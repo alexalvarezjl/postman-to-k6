@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postman → k6 Converter | Load Testing Generator</title>
+  <meta name="description" content="Convierte colecciones de Postman a scripts de k6 para load testing y performance testing en segundos." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Background blobs -->
+  <div class="bg-blob blob-1"></div>
+  <div class="bg-blob blob-2"></div>
+  <div class="bg-blob blob-3"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Postman<span class="logo-accent"> → k6</span></span>
+      </div>
+      <nav class="header-nav">
+        <a href="#how-it-works" class="nav-link">¿Cómo funciona?</a>
+        <a href="https://k6.io/docs/" target="_blank" class="nav-link">Docs k6 ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Conversión instantánea · 100% en el navegador
+    </div>
+    <h1 class="hero-title">
+      Convierte tus colecciones<br/>
+      <span class="gradient-text">Postman a k6</span>
+    </h1>
+    <p class="hero-subtitle">
+      Sube o pega tu colección de Postman y genera scripts de k6 listos para
+      ejecutar pruebas de carga y performance, sin escribir código.
+    </p>
+  </section>
+
+  <!-- Main app -->
+  <main class="app-container" id="app">
+
+    <!-- Step 1: Import -->
+    <div class="step-card" id="step-import">
+      <div class="step-header">
+        <div class="step-number active" id="step-num-1">1</div>
+        <div>
+          <h2 class="step-title">Importar colección Postman</h2>
+          <p class="step-desc">Arrastra un archivo .json o pega el contenido directamente</p>
+        </div>
+      </div>
+
+      <div class="import-area" id="drop-zone">
+        <div class="drop-icon">📂</div>
+        <p class="drop-text">Arrastra tu colección Postman aquí</p>
+        <p class="drop-subtext">o</p>
+        <label class="btn btn-outline" for="file-input">Seleccionar archivo</label>
+        <input type="file" id="file-input" accept=".json" hidden />
+        <p class="drop-subtext">Soporta Postman Collection v2.0 y v2.1</p>
+      </div>
+
+      <div class="divider-text">o pega el JSON directamente</div>
+
+      <div class="paste-area">
+        <textarea
+          id="json-input"
+          class="json-textarea"
+          placeholder='{ "info": { "name": "Mi API", ... }, "item": [...] }'
+          rows="8"
+          spellcheck="false"
+        ></textarea>
+        <div class="paste-actions">
+          <span id="json-status" class="json-status"></span>
+          <button id="btn-parse" class="btn btn-primary">
+            <span>Analizar colección</span>
+            <span class="btn-icon">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Preview requests -->
+    <div class="step-card step-card--locked" id="step-preview">
+      <div class="step-header">
+        <div class="step-number" id="step-num-2">2</div>
+        <div>
+          <h2 class="step-title">Requests detectadas</h2>
+          <p class="step-desc">Revisa y selecciona las requests que deseas incluir</p>
+        </div>
+        <div class="step-actions" id="preview-actions" style="display:none">
+          <button id="btn-select-all" class="btn btn-ghost btn-sm">Seleccionar todo</button>
+          <button id="btn-deselect-all" class="btn btn-ghost btn-sm">Deseleccionar todo</button>
+        </div>
+      </div>
+
+      <div id="requests-list" class="requests-list">
+        <div class="empty-state">
+          <span class="empty-icon">🔍</span>
+          <p>Importa una colección para ver las requests</p>
+        </div>
+      </div>
+
+      <div id="collection-summary" class="collection-summary" style="display:none">
+        <div class="summary-item">
+          <span class="summary-value" id="summary-total">0</span>
+          <span class="summary-label">Total requests</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-value" id="summary-selected">0</span>
+          <span class="summary-label">Seleccionadas</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-value" id="summary-folders">0</span>
+          <span class="summary-label">Carpetas</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Configure k6 -->
+    <div class="step-card step-card--locked" id="step-config">
+      <div class="step-header">
+        <div class="step-number" id="step-num-3">3</div>
+        <div>
+          <h2 class="step-title">Configurar k6</h2>
+          <p class="step-desc">Define las opciones de carga para tu prueba</p>
+        </div>
+      </div>
+
+      <div class="config-grid">
+
+        <!-- Mode selector -->
+        <div class="config-section config-section--full">
+          <label class="config-label">Modo de prueba</label>
+          <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="simple" id="mode-simple">
+              <span class="mode-icon">🚀</span>
+              <span class="mode-name">Simple</span>
+              <span class="mode-desc">VUs + duración fija</span>
+            </button>
+            <button class="mode-tab" data-mode="stages" id="mode-stages">
+              <span class="mode-icon">📈</span>
+              <span class="mode-name">Stages</span>
+              <span class="mode-desc">Ramp-up / ramp-down</span>
+            </button>
+            <button class="mode-tab" data-mode="ramping" id="mode-ramping">
+              <span class="mode-icon">⚙️</span>
+              <span class="mode-name">Ramping VUs</span>
+              <span class="mode-desc">Escalado dinámico</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Simple config -->
+        <div id="config-simple" class="config-panel">
+          <div class="config-row">
+            <div class="config-field">
+              <label class="config-label" for="cfg-vus">Virtual Users (VUs)</label>
+              <div class="input-with-unit">
+                <input type="number" id="cfg-vus" class="config-input" value="10" min="1" max="10000" />
+                <span class="input-unit">VUs</span>
+              </div>
+            </div>
+            <div class="config-field">
+              <label class="config-label" for="cfg-duration">Duración</label>
+              <div class="input-with-unit">
+                <input type="number" id="cfg-duration" class="config-input" value="30" min="1" />
+                <span class="input-unit">seg</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stages config -->
+        <div id="config-stages" class="config-panel" style="display:none">
+          <div class="stages-container" id="stages-list">
+            <div class="stage-row" data-stage="0">
+              <span class="stage-label">Ramp up</span>
+              <div class="input-with-unit">
+                <input type="number" class="config-input stage-duration" value="30" min="1" />
+                <span class="input-unit">seg</span>
+              </div>
+              <span class="stage-arrow">→</span>
+              <div class="input-with-unit">
+                <input type="number" class="config-input stage-target" value="50" min="0" />
+                <span class="input-unit">VUs</span>
+              </div>
+            </div>
+            <div class="stage-row" data-stage="1">
+              <span class="stage-label">Steady</span>
+              <div class="input-with-unit">
+                <input type="number" class="config-input stage-duration" value="60" min="1" />
+                <span class="input-unit">seg</span>
+              </div>
+              <span class="stage-arrow">→</span>
+              <div class="input-with-unit">
+                <input type="number" class="config-input stage-target" value="50" min="0" />
+                <span class="input-unit">VUs</span>
+              </div>
+            </div>
+            <div class="stage-row" data-stage="2">
+              <span class="stage-label">Ramp down</span>
+              <div class="input-with-unit">
+                <input type="number" class="config-input stage-duration" value="30" min="1" />
+                <span class="input-unit">seg</span>
+              </div>
+              <span class="stage-arrow">→</span>
+              <div class="input-with-unit">
+                <input type="number" class="config-input stage-target" value="0" min="0" />
+                <span class="input-unit">VUs</span>
+              </div>
+            </div>
+          </div>
+          <button id="btn-add-stage" class="btn btn-ghost btn-sm" style="margin-top:8px">+ Agregar stage</button>
+        </div>
+
+        <!-- Ramping VUs config -->
+        <div id="config-ramping" class="config-panel" style="display:none">
+          <div class="config-row">
+            <div class="config-field">
+              <label class="config-label" for="cfg-start-vus">VUs iniciales</label>
+              <div class="input-with-unit">
+                <input type="number" id="cfg-start-vus" class="config-input" value="0" min="0" />
+                <span class="input-unit">VUs</span>
+              </div>
+            </div>
+            <div class="config-field">
+              <label class="config-label" for="cfg-peak-vus">VUs pico</label>
+              <div class="input-with-unit">
+                <input type="number" id="cfg-peak-vus" class="config-input" value="100" min="1" />
+                <span class="input-unit">VUs</span>
+              </div>
+            </div>
+            <div class="config-field">
+              <label class="config-label" for="cfg-ramp-duration">Duración total</label>
+              <div class="input-with-unit">
+                <input type="number" id="cfg-ramp-duration" class="config-input" value="120" min="1" />
+                <span class="input-unit">seg</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thresholds -->
+        <div class="config-section config-section--full">
+          <label class="config-label">Thresholds (SLOs)</label>
+          <div class="thresholds-grid">
+            <div class="threshold-item">
+              <input type="checkbox" id="th-http-duration" class="threshold-check" checked />
+              <label for="th-http-duration" class="threshold-label">
+                <span class="threshold-name">http_req_duration</span>
+                <span class="threshold-op">p(95) &lt;</span>
+                <input type="number" id="th-http-duration-val" class="threshold-input" value="500" />
+                <span class="threshold-unit">ms</span>
+              </label>
+            </div>
+            <div class="threshold-item">
+              <input type="checkbox" id="th-http-failed" class="threshold-check" checked />
+              <label for="th-http-failed" class="threshold-label">
+                <span class="threshold-name">http_req_failed</span>
+                <span class="threshold-op">rate &lt;</span>
+                <input type="number" id="th-http-failed-val" class="threshold-input" value="1" step="0.1" />
+                <span class="threshold-unit">%</span>
+              </label>
+            </div>
+            <div class="threshold-item">
+              <input type="checkbox" id="th-http-waiting" class="threshold-check" />
+              <label for="th-http-waiting" class="threshold-label">
+                <span class="threshold-name">http_req_waiting</span>
+                <span class="threshold-op">p(99) &lt;</span>
+                <input type="number" id="th-http-waiting-val" class="threshold-input" value="1000" />
+                <span class="threshold-unit">ms</span>
+              </label>
+            </div>
+            <div class="threshold-item">
+              <input type="checkbox" id="th-iterations" class="threshold-check" />
+              <label for="th-iterations" class="threshold-label">
+                <span class="threshold-name">iterations</span>
+                <span class="threshold-op">count &gt;</span>
+                <input type="number" id="th-iterations-val" class="threshold-input" value="100" />
+                <span class="threshold-unit">iter</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Base URL override -->
+        <div class="config-section">
+          <label class="config-label" for="cfg-base-url">Base URL (opcional override)</label>
+          <input
+            type="text"
+            id="cfg-base-url"
+            class="config-input config-input--full"
+            placeholder="https://staging.miapi.com"
+          />
+          <p class="config-hint">Si se ingresa, reemplaza la URL base de la colección</p>
+        </div>
+
+        <!-- Sleep between requests -->
+        <div class="config-section">
+          <label class="config-label" for="cfg-sleep">Pausa entre requests</label>
+          <div class="input-with-unit">
+            <input type="number" id="cfg-sleep" class="config-input" value="1" min="0" step="0.1" />
+            <span class="input-unit">seg</span>
+          </div>
+          <p class="config-hint">Sleep entre requests (0 = sin pausa)</p>
+        </div>
+
+      </div>
+
+      <div class="step-footer">
+        <button id="btn-generate" class="btn btn-primary btn-lg">
+          <span class="btn-icon">⚡</span>
+          Generar script k6
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 4: Result -->
+    <div class="step-card step-card--locked" id="step-result">
+      <div class="step-header">
+        <div class="step-number" id="step-num-4">4</div>
+        <div>
+          <h2 class="step-title">Script generado</h2>
+          <p class="step-desc">Tu script k6 listo para ejecutar</p>
+        </div>
+        <div class="step-actions">
+          <button id="btn-copy" class="btn btn-ghost btn-sm">📋 Copiar</button>
+          <button id="btn-download" class="btn btn-primary btn-sm">⬇️ Descargar .js</button>
+        </div>
+      </div>
+
+      <div class="code-wrapper">
+        <div class="code-toolbar">
+          <span class="code-lang">javascript · k6</span>
+          <span id="code-lines" class="code-meta"></span>
+        </div>
+        <pre id="code-output" class="code-block"><code id="code-content"></code></pre>
+      </div>
+
+      <div class="run-instructions">
+        <h3 class="run-title">¿Cómo ejecutar?</h3>
+        <div class="run-steps">
+          <div class="run-step">
+            <span class="run-num">1</span>
+            <div>
+              <p class="run-step-title">Instalar k6</p>
+              <code class="run-code">brew install k6  # macOS<br/>sudo apt install k6  # Ubuntu</code>
+            </div>
+          </div>
+          <div class="run-step">
+            <span class="run-num">2</span>
+            <div>
+              <p class="run-step-title">Ejecutar el script</p>
+              <code class="run-code" id="run-cmd">k6 run load-test.js</code>
+            </div>
+          </div>
+          <div class="run-step">
+            <span class="run-num">3</span>
+            <div>
+              <p class="run-step-title">Ver resultados en Grafana (opcional)</p>
+              <code class="run-code">k6 run --out influxdb=http://localhost:8086/k6 load-test.js</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- How it works section -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="how-inner">
+      <h2 class="how-title">¿Cómo funciona?</h2>
+      <div class="how-grid">
+        <div class="how-card">
+          <span class="how-icon">📦</span>
+          <h3>Importa tu colección</h3>
+          <p>Exporta tu colección desde Postman como JSON v2.0 o v2.1 y súbela aquí.</p>
+        </div>
+        <div class="how-card">
+          <span class="how-icon">🎛️</span>
+          <h3>Configura la carga</h3>
+          <p>Define VUs, duración, stages y thresholds para modelar tu escenario de carga.</p>
+        </div>
+        <div class="how-card">
+          <span class="how-icon">⚡</span>
+          <h3>Genera y ejecuta</h3>
+          <p>Descarga el script k6 generado y ejecútalo con un solo comando en tu terminal.</p>
+        </div>
+        <div class="how-card">
+          <span class="how-icon">📊</span>
+          <h3>Analiza resultados</h3>
+          <p>k6 reporta métricas detalladas: latencia, throughput, errores y más.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Conversión 100% local · Ningún dato sale de tu navegador · Hecho con ❤️</p>
+  </footer>
+
+  <script src="converter.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
