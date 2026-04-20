@@ -315,6 +315,61 @@
           <p class="config-hint">Sleep entre requests (0 = sin pausa)</p>
         </div>
 
+        <!-- Módulos del proyecto k6 -->
+        <div class="config-section config-section--full">
+          <label class="config-label">Módulos del proyecto k6</label>
+          <div class="k6-modules-grid">
+
+            <!-- setup() + getAuthToken -->
+            <div class="module-card" id="module-setup-card">
+              <div class="module-header">
+                <input type="checkbox" id="cfg-use-setup" class="threshold-check" checked />
+                <label for="cfg-use-setup" class="module-title">
+                  Incluir <code>setup()</code> con <code>getAuthToken()</code>
+                </label>
+              </div>
+              <div class="module-body" id="module-setup-body">
+                <div class="config-field">
+                  <label class="config-label" for="cfg-auth-path">Path del helper de autenticación</label>
+                  <input type="text" id="cfg-auth-path" class="config-input config-input--full" value="../../support/auth.js" />
+                </div>
+                <div class="config-field">
+                  <label class="config-label" for="cfg-env-path">Path del helper de entorno</label>
+                  <input type="text" id="cfg-env-path" class="config-input config-input--full" value="../../support/env.js" />
+                </div>
+                <div class="config-row">
+                  <div class="config-field">
+                    <label class="config-label" for="cfg-role">ROLE por defecto</label>
+                    <input type="text" id="cfg-role" class="config-input" value="ciudadano" />
+                  </div>
+                  <div class="config-field">
+                    <label class="config-label" for="cfg-on-behalf-of">ON_BEHALF_OF</label>
+                    <input type="text" id="cfg-on-behalf-of" class="config-input" placeholder="ej: 20418072793" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- handleSummary() + htmlReport -->
+            <div class="module-card" id="module-summary-card">
+              <div class="module-header">
+                <input type="checkbox" id="cfg-use-summary" class="threshold-check" checked />
+                <label for="cfg-use-summary" class="module-title">
+                  Incluir <code>handleSummary()</code> con reporte HTML
+                </label>
+              </div>
+              <div class="module-body" id="module-summary-body">
+                <div class="config-field">
+                  <label class="config-label" for="cfg-report-path">Path del archivo de reporte HTML</label>
+                  <input type="text" id="cfg-report-path" class="config-input config-input--full" value="results/reporte-smoke.html" />
+                </div>
+                <p class="config-hint">Usa k6-reporter y k6-summary para generar reportes visuales al finalizar.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
       <div class="step-footer">
@@ -336,6 +391,7 @@
         <div class="step-actions">
           <button id="btn-copy" class="btn btn-ghost btn-sm">📋 Copiar</button>
           <button id="btn-download" class="btn btn-primary btn-sm">⬇️ Descargar .js</button>
+          <button id="btn-download-per-request" class="btn btn-secondary btn-sm">📦 1 archivo por request</button>
         </div>
       </div>
 
@@ -410,6 +466,7 @@
     <p>Conversión 100% local · Ningún dato sale de tu navegador · Hecho con ❤️</p>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="converter.js"></script>
   <script src="app.js"></script>
 </body>

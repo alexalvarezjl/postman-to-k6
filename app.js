@@ -54,10 +54,32 @@ const DOM = {
   btnGenerate: $('btn-generate'),
   btnCopy:     $('btn-copy'),
   btnDownload: $('btn-download'),
+  btnDownloadPerRequest: $('btn-download-per-request'),
   codeContent: $('code-content'),
   codeLines:   $('code-lines'),
   runCmd:      $('run-cmd'),
+
+  // k6 modules
+  cfgUseSetup:    $('cfg-use-setup'),
+  cfgAuthPath:    $('cfg-auth-path'),
+  cfgEnvPath:     $('cfg-env-path'),
+  cfgRole:        $('cfg-role'),
+  cfgOnBehalfOf:  $('cfg-on-behalf-of'),
+  cfgUseSummary:  $('cfg-use-summary'),
+  cfgReportPath:  $('cfg-report-path'),
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE TOGGLES
+// ─────────────────────────────────────────────────────────────────────────────
+DOM.cfgUseSetup.addEventListener('change', function () {
+  $('module-setup-body').style.display = this.checked ? '' : 'none';
+  $('module-setup-body').style.opacity = this.checked ? '1' : '0.4';
+});
+DOM.cfgUseSummary.addEventListener('change', function () {
+  $('module-summary-body').style.display = this.checked ? '' : 'none';
+  $('module-summary-body').style.opacity = this.checked ? '1' : '0.4';
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STEP MANAGEMENT
@@ -338,7 +360,15 @@ function readConfig() {
     mode,
     sleep: parseFloat($('cfg-sleep').value) || 0,
     baseUrl: $('cfg-base-url').value.trim(),
-    thresholds: readThresholds()
+    thresholds: readThresholds(),
+    // k6 project modules
+    useSetup:        DOM.cfgUseSetup.checked,
+    authPath:        DOM.cfgAuthPath.value.trim(),
+    envPath:         DOM.cfgEnvPath.value.trim(),
+    role:            DOM.cfgRole.value.trim(),
+    onBehalfOf:      DOM.cfgOnBehalfOf.value.trim(),
+    useHandleSummary: DOM.cfgUseSummary.checked,
+    reportPath:      DOM.cfgReportPath.value.trim(),
   };
 
   if (mode === 'simple') {
@@ -433,6 +463,59 @@ DOM.btnDownload.addEventListener('click', () => {
   a.click();
   URL.revokeObjectURL(url);
   showToast(`⬇️ Descargando ${state.scriptFilename}`, 'success');
+});
+
+DOM.btnDownloadPerRequest.addEventListener('click', async () => {
+  if (!state.collection) { showToast('Primero importa una coleccion', 'error'); return; }
+
+  const config = readConfig();
+  let scripts;
+  try {
+    scripts = PostmanConverter.generateK6ScriptsPerRequest(state.collection, config);
+  } catch (err) {
+    showToast(err.message, 'error');
+    return;
+  }
+
+  if (scripts.length === 1) {
+    // Only one request — download directly, no ZIP needed
+    const { filename, content } = scripts[0];
+    const blob = new Blob([content], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`⬇️ Descargando ${filename}`, 'success');
+    return;
+  }
+
+  // Multiple requests — bundle into a ZIP
+  if (typeof JSZip === 'undefined') {
+    showToast('JSZip no cargado — revisa tu conexion a internet', 'error');
+    return;
+  }
+  const zip = new JSZip();
+  scripts.forEach(({ filename, content }) => {
+    zip.file(filename, content);
+  });
+
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  const collectionSlug = state.collection.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  const zipName = `${collectionSlug}-k6-scripts.zip`;
+
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = zipName;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`⬇️ Descargando ${zipName} (${scripts.length} archivos)`, 'success');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -231,62 +231,77 @@ function generateK6Script(collection, config) {
   const selectedRequests = collection.requests.filter(r => r.selected);
   if (selectedRequests.length === 0) throw new Error('No hay requests seleccionadas.');
 
+  // ── Modular config options ─────────────────────────────────────
+  const useSetup         = config.useSetup !== false;         // default: true
+  const useHandleSummary = config.useHandleSummary !== false; // default: true
+  const authPath         = config.authPath   || '../../support/auth.js';
+  const envPath          = config.envPath    || '../../support/env.js';
+  const reportPath       = config.reportPath || 'results/reporte-smoke.html';
+  const role             = config.role       || 'ciudadano';
+  const onBehalfOf       = config.onBehalfOf || '';
+
   const lines = [];
-  const needsCheck = selectedRequests.some(r => r.checks.length > 0);
 
   // ── Imports ───────────────────────────────────────────────────
   lines.push(`import http from 'k6/http';`);
-  lines.push(`import { sleep${needsCheck ? ', check' : ''} } from 'k6';`);
-  if (needsCheck) lines.push(`import { Rate } from 'k6/metrics';`);
+  lines.push(`import { check, sleep } from 'k6';`);
+  if (useSetup) {
+    lines.push(`import { getAuthToken } from '${authPath}';`);
+    lines.push(`import { envConfig } from '${envPath}';`);
+  }
+  if (useHandleSummary) {
+    lines.push(`import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";`);
+    lines.push(`import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';`);
+  }
   lines.push('');
 
-  // ── Custom metrics ────────────────────────────────────────────
-  if (needsCheck) {
-    lines.push(`const errorRate = new Rate('errors');`);
-    lines.push('');
-  }
-
-  // ── Options ──────────────────────────────────────────────────
+  // ── Options ───────────────────────────────────────────────────
   lines.push('export const options = {');
   lines.push(generateOptions(config));
   lines.push('};');
   lines.push('');
 
-  // ── Variables ────────────────────────────────────────────────
-  const variables = extractVariables(selectedRequests, collection.variables || []);
-  const baseUrl = config.baseUrl ? config.baseUrl.replace(/\/$/, '') : '';
-
-  if (variables.length > 0 || baseUrl) {
-    lines.push('// ─── Environment Variables ───────────────────────────────────');
-    if (baseUrl) {
-      lines.push(`const BASE_URL = '${baseUrl}';`);
-    } else {
-      // Try to detect base URL from requests
-      const detectedBase = detectBaseUrl(selectedRequests);
-      if (detectedBase) {
-        lines.push(`const BASE_URL = '${detectedBase}';`);
-      }
+  // ── Standalone env vars (solo cuando NO se usa el patrón modular) ──
+  if (!useSetup) {
+    const variables = extractVariables(selectedRequests, collection.variables || []);
+    if (variables.length > 0) {
+      lines.push('// ─── Environment Variables ───────────────────────────────────');
+      variables.forEach(v => {
+        const varName = sanitizeVarName(v.key);
+        const defaultVal = v.value ? JSON.stringify(v.value) : '""';
+        lines.push(`const ${varName} = __ENV.${varName.toUpperCase()} || ${defaultVal};`);
+      });
+      lines.push('');
     }
-    variables.forEach(v => {
-      const safe = JSON.stringify(v.value || '');
-      lines.push(`const ${sanitizeVarName(v.key)} = __ENV.${sanitizeVarName(v.key).toUpperCase()} || ${safe};`);
-    });
+  }
+
+  // ── setup() — se ejecuta 1 sola vez, devuelve el token ────────
+  if (useSetup) {
+    lines.push('// ─── Setup (obtener token, se ejecuta 1 sola vez) ───────────');
+    lines.push('export function setup() {');
+    lines.push(`  const role = __ENV.ROLE || '${escStr(role)}';`);
+    lines.push(`  const onBehalfOf = __ENV.ON_BEHALF_OF || '${escStr(onBehalfOf)}';`);
+    lines.push('  const token = getAuthToken(role, onBehalfOf);');
+    lines.push('  return { token };');
+    lines.push('}');
     lines.push('');
   }
 
-  // ── Setup (collection-level variables) ───────────────────────
+  // ── Default function ──────────────────────────────────────────
   lines.push('// ─── Default function ────────────────────────────────────────');
-  lines.push('export default function () {');
+  lines.push(`export default function (${useSetup ? 'data' : ''}) {`);
   lines.push('');
 
-  // Group by folder
+  const detectedBase = (config.baseUrl ? config.baseUrl.replace(/\/$/, '') : '')
+    || detectBaseUrl(selectedRequests);
   const grouped = groupByFolder(selectedRequests);
+
   for (const [folder, reqs] of grouped) {
     if (folder) {
       lines.push(`  // ── ${folder} ──`);
     }
     for (const req of reqs) {
-      lines.push(...generateRequestBlock(req, baseUrl || detectBaseUrl(selectedRequests), config));
+      lines.push(...generateRequestBlock(req, detectedBase, config));
       lines.push('');
     }
   }
@@ -296,6 +311,18 @@ function generateK6Script(collection, config) {
   }
 
   lines.push('}');
+
+  // ── handleSummary() — reporte HTML al finalizar ───────────────
+  if (useHandleSummary) {
+    lines.push('');
+    lines.push('// ─── Reporte HTML ────────────────────────────────────────────');
+    lines.push('export function handleSummary(data) {');
+    lines.push('  return {');
+    lines.push(`    '${escStr(reportPath)}': htmlReport(data),`);
+    lines.push(`    stdout: textSummary(data, { indent: ' ', enableColors: true }),`);
+    lines.push('  };');
+    lines.push('}');
+  }
 
   return lines.join('\n');
 }
@@ -347,12 +374,14 @@ function generateOptions(config) {
 function generateRequestBlock(req, baseUrl, config) {
   const lines = [];
   const indent = '  ';
+  const useModular = config && config.useSetup !== false;
 
   // Comment: request name
   lines.push(`${indent}// ${req.name}`);
 
-  // Build URL
-  let urlExpr = buildUrlExpression(req, baseUrl);
+  // Build URL as a named variable (matching detalleBoletasSmoke.js style)
+  const urlExpr = buildUrlExpression(req, baseUrl, config);
+  lines.push(`${indent}const url_${req.id} = ${urlExpr};`);
 
   // Headers object
   const hasHeaders = req.headers.length > 0;
@@ -360,7 +389,26 @@ function generateRequestBlock(req, baseUrl, config) {
     lines.push(`${indent}const params_${req.id} = {`);
     lines.push(`${indent}  headers: {`);
     req.headers.forEach(h => {
-      lines.push(`${indent}    '${escStr(h.key)}': '${escStr(resolvePostmanVar(h.value))}',`);
+      let valueStr;
+      if (useModular && h.key.toLowerCase() === 'authorization') {
+        // Modular mode: replace Bearer/Basic with data.token (real JS interpolation via backtick)
+        if (/^bearer/i.test(h.value.trim())) {
+          valueStr = '`Bearer ${data.token}`';
+        } else if (/^basic/i.test(h.value.trim())) {
+          valueStr = '`Basic ${data.token}`';
+        } else {
+          valueStr = '`${data.token}`';
+        }
+      } else {
+        const resolvedValue = resolvePostmanVar(h.value);
+        // Use backtick template literal when the value has ${...} variable references
+        if (resolvedValue.includes('${')) {
+          valueStr = `\`${resolvedValue.replace(/`/g, '\\`')}\``;
+        } else {
+          valueStr = `'${escStr(resolvedValue)}'`;
+        }
+      }
+      lines.push(`${indent}    '${escStr(h.key)}': ${valueStr},`);
     });
     lines.push(`${indent}  },`);
     lines.push(`${indent}};`);
@@ -372,7 +420,6 @@ function generateRequestBlock(req, baseUrl, config) {
     if (req.body.mode === 'raw') {
       const raw = resolvePostmanVar(req.body.raw);
       if (req.body.language === 'json') {
-        // Try to parse/reformat for readability
         try {
           const parsed = JSON.parse(raw);
           bodyExpr = `JSON.stringify(${JSON.stringify(parsed, null, 6)
@@ -384,16 +431,8 @@ function generateRequestBlock(req, baseUrl, config) {
         bodyExpr = `\`${raw.replace(/`/g, '\\`')}\``;
       }
     } else if (req.body.mode === 'urlencoded') {
-      const pairs = req.body.urlencoded.map(f =>
-        `'${encodeURIComponent(f.key)}=${encodeURIComponent(resolvePostmanVar(f.value))}'`
-      ).join(' + \'&\' +\n${indent}    ');
-      bodyExpr = req.body.urlencoded.length > 0
-        ? `${req.body.urlencoded.map(f =>
-          `'${encodeURIComponent(f.key)}=${encodeURIComponent(resolvePostmanVar(f.value))}'`
-        ).join(' + \'&\' + ')}`
-        : `''`;
       bodyExpr = `[${req.body.urlencoded.map(f =>
-        `\`${encodeURIComponent(f.key)}=\${encodeURIComponent('${escStr(resolvePostmanVar(f.value))}'}\``
+        `\`${encodeURIComponent(f.key)}=\${encodeURIComponent('${escStr(resolvePostmanVar(f.value))}')}\``
       ).join(', ')}].join('&')`;
     } else if (req.body.mode === 'formdata') {
       lines.push(`${indent}const formData_${req.id} = {`);
@@ -405,57 +444,77 @@ function generateRequestBlock(req, baseUrl, config) {
     }
   }
 
-  // HTTP call
+  // HTTP call — use url_<id> variable
   const method = req.method.toLowerCase();
   const methodsWithBody = ['post', 'put', 'patch', 'delete'];
   const paramsArg = hasHeaders ? `, params_${req.id}` : '';
 
   if (methodsWithBody.includes(method)) {
-    lines.push(`${indent}const res_${req.id} = http.${method}(${urlExpr}, ${bodyExpr}${paramsArg});`);
+    lines.push(`${indent}const res_${req.id} = http.${method}(url_${req.id}, ${bodyExpr}${paramsArg});`);
   } else {
-    lines.push(`${indent}const res_${req.id} = http.${method}(${urlExpr}${paramsArg});`);
+    lines.push(`${indent}const res_${req.id} = http.${method}(url_${req.id}${paramsArg});`);
   }
 
-  // Checks
-  if (req.checks.length > 0) {
-    lines.push(`${indent}const ok_${req.id} = check(res_${req.id}, {`);
-    req.checks.forEach(c => {
-      lines.push(`${indent}  '${escStr(c.name)}': ${c.expr},`);
-    });
-    lines.push(`${indent}});`);
-    lines.push(`${indent}errorRate.add(!ok_${req.id});`);
-  }
+  // Checks: use Postman-extracted checks or fallback to default status check
+  const allChecks = req.checks.length > 0
+    ? req.checks
+    : [{ name: 'Status es 200', expr: '(r) => r.status === 200' }];
+  lines.push(`${indent}check(res_${req.id}, {`);
+  allChecks.forEach(c => {
+    lines.push(`${indent}  '${escStr(c.name)}': ${c.expr},`);
+  });
+  lines.push(`${indent}});`);
 
   return lines;
 }
 
 // ── URL builder ───────────────────────────────────────────────────────────────
-function buildUrlExpression(req, baseUrl) {
+/**
+ * Builds a URL template literal expression.
+ * - Modular mode (useSetup=true): first {{var}} → ${envConfig.apiUrl}, rest resolve normally.
+ * - Standalone mode: {{var}} → ${VAR_NAME} (declared JS const from __ENV).
+ * Always returns a backtick template literal so interpolation works at JS runtime.
+ */
+function buildUrlExpression(req, baseUrl, config) {
   let url = req.url;
+  const useModular = config && config.useSetup !== false;
 
-  // If baseUrl override is provided, strip the detected base from the url
+  // Strip explicit baseUrl override prefix
   if (baseUrl && url.startsWith(baseUrl)) {
-    url = url.slice(baseUrl.length);
+    url = url.slice(baseUrl.length).replace(/^\//, '');
   }
 
-  // Replace Postman variables {{var}} → ${VAR}
-  url = resolvePostmanVar(url);
+  if (useModular) {
+    // First {{...}} in the URL becomes ${envConfig.apiUrl}; the rest resolve normally
+    let firstReplaced = false;
+    url = url.replace(/\{\{(\w+)\}\}/g, (_, name) => {
+      if (!firstReplaced) {
+        firstReplaced = true;
+        return '${envConfig.apiUrl}';
+      }
+      return `\${${sanitizeVarName(name)}}`;
+    });
+  } else {
+    // Standalone: {{var}} → ${VAR} (JS variable declared from __ENV)
+    url = resolvePostmanVar(url);
+  }
 
-  // Has a BASE_URL?
-  const hasBaseUrl = baseUrl;
-  const urlFull = hasBaseUrl
-    ? `\`\${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}\``
-    : `'${url}'`;
-
-  // Query params
+  // Append query params inline in the template literal string
+  let qs = '';
   if (req.queryParams.length > 0) {
-    const qsExpr = req.queryParams.map(q =>
-      `${encodeURIComponent(q.key)}=\${encodeURIComponent('${escStr(resolvePostmanVar(q.value))}')}`
-    ).join('&');
-    return `\`${urlFull.slice(1, -1)}?${qsExpr}\``;
+    qs = '?' + req.queryParams.map(q => {
+      const key = encodeURIComponent(q.key);
+      const val = resolvePostmanVar(q.value);
+      // If val has ${...} interpolation, embed directly; otherwise encode statically
+      if (val.includes('${')) {
+        return `${key}=${val}`;
+      }
+      return `${key}=${encodeURIComponent(val)}`;
+    }).join('&');
   }
 
-  return urlFull;
+  // Always return a template literal — envConfig.apiUrl and __ENV vars need JS evaluation
+  return `\`${(url + qs).replace(/`/g, '\\`')}\``;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -571,10 +630,52 @@ function highlightK6(code) {
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PER-REQUEST GENERATOR
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Generate a standalone k6 script for a single request.
+ * @param {Object} req        – single request object from extractRequests()
+ * @param {Object} collection – full collection { name, variables }
+ * @param {Object} config     – k6 configuration options
+ * @returns {string}          – complete k6 script string
+ */
+function generateK6ScriptForRequest(req, collection, config) {
+  const miniCollection = {
+    requests: [req],
+    variables: collection.variables || []
+  };
+  return generateK6Script(miniCollection, config);
+}
+
+/**
+ * Generate one script per selected request.
+ * @param {Object} collection – parsed collection { name, requests, variables }
+ * @param {Object} config     – k6 configuration options
+ * @returns {Array<{filename: string, content: string}>}
+ */
+function generateK6ScriptsPerRequest(collection, config) {
+  const selectedRequests = collection.requests.filter(r => r.selected);
+  if (selectedRequests.length === 0) throw new Error('No hay requests seleccionadas.');
+
+  return selectedRequests.map(req => {
+    const slug = req.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 50);
+    const filename = `${slug}-test.js`;
+    const content = generateK6ScriptForRequest(req, collection, config);
+    return { filename, content, requestName: req.name, method: req.method };
+  });
+}
+
 // Export for app.js
 window.PostmanConverter = {
   extractRequests,
   generateK6Script,
+  generateK6ScriptsPerRequest,
   highlightK6,
   detectBaseUrl
 };
