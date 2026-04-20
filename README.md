@@ -56,8 +56,10 @@ No requiere servidor, backend ni instalación. Abre el `index.html` en cualquier
 | 🔄 **Variables Postman** | Detecta `{{variables}}` y las exporta como constantes JS |
 | 🌐 **Base URL automática** | Detecta o permite sobreescribir la URL base de la colección |
 | ⏱️ **Sleep configurable** | Agrega pausa entre requests para simular comportamiento real de usuarios |
+| 🧩 **Arquitectura modular** | Generación de scripts con `setup()` y helpers externos (`auth.js`, `env.js`) |
+| 📊 **Reporte HTML** | Integración nativa con `handleSummary()` usando `k6-reporter` |
 | 🎨 **Syntax highlighting** | Resaltado de sintaxis JavaScript/k6 en el preview del script |
-| 📋 **Copiar / Descargar** | Copia al portapapeles o descarga el archivo `.js` directamente |
+| 📋 **Copia / Múltiples Descargas** | Copia, descarga como 1 script consolidado o exporta 1 script por request en `.zip` |
 | 🔒 **100% local** | Ningún dato sale de tu navegador. Todo se procesa en el cliente |
 
 ---
@@ -140,6 +142,11 @@ Ver sección [Thresholds (SLOs)](#-thresholds-slos).
 #### Base URL (override)
 Si ingresas una URL aquí (ej. `https://staging.miapi.com`), esta reemplaza la URL base detectada automáticamente de la colección. Útil para apuntar a distintos entornos.
 
+#### Módulos del proyecto k6
+Permite alinear el script generado con una arquitectura de proyecto k6 existente:
+- **`setup()` + Autenticación:** Genera la función `setup` importando un helper local (`import { getAuthToken }`) para obtener dinámicamente un token y pasarlo a las peticiones con interpolación JS real (`Bearer ${data.token}`).
+- **`handleSummary()` + Reporte HTML:** Inyecta de manera automática la lógica para generar reportes en consola e HTML usando `k6-reporter` y `k6-summary`.
+
 #### Pausa entre requests
 Tiempo en segundos entre cada request dentro de la función default (simula el _think time_ de un usuario real). Valor `0` = sin pausa.
 
@@ -147,8 +154,10 @@ Tiempo en segundos entre cada request dentro de la función default (simula el _
 
 - **Preview** del script con syntax highlighting
 - Contador de líneas
-- Botón **"Copiar"** → copia al portapapeles
-- Botón **"Descargar .js"** → descarga el archivo con el nombre de la colección (ej. `mi-api-test.js`)
+- Botón **"Copiar código"** → copia al portapapeles
+- Botones de **Descarga**:
+  - **"Descargar .js"**: Descarga un archivo monolítico con todas las requests seleccionadas (ej. `mi-api-test.js`).
+  - **"📦 1 archivo por request"**: Exporta un archivo `.zip` que contiene un script k6 separado, independiente y con su propia estructura completa por cada request de la colección.
 - Instrucciones de ejecución con los comandos exactos
 
 ---
@@ -398,6 +407,7 @@ Motor de conversión con API pública en `window.PostmanConverter`:
 PostmanConverter
 ├── extractRequests(items, folderPath)   → { folders, requests }
 ├── generateK6Script(collection, config) → string (script k6)
+├── generateK6ScriptsPerRequest(col, cfg)→ Array<{filename, content}>
 ├── highlightK6(code)                    → string (HTML con spans)
 └── detectBaseUrl(requests)              → string
 ```
