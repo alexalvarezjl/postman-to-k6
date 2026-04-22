@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "k6-docs": {
+      "source": "takuan-osho/ccmarketplace",
+      "sourceType": "github",
+      "computedHash": "848fa4f55878404e6eabe115f8b255c65dc812a570bca5396a78aaf84cc2a906"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "126f1ebf6ccd414f42544f6e83d8cc5adb089e1108eaffb7c400701e37eecd9f"
+    },
+    "writing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "bfaed11054ad8021c66860244e2d2e0d1eca483ae9f5fbfcb956e99c61f5c3d7"
+    }
+  }
+}
