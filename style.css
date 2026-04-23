@@ -761,6 +761,70 @@ body {
 }
 
 /* ============================================================
+   INPUT MODE TABS (Step 1 — Postman vs. cURL)
+   ============================================================ */
+.input-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.input-mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.input-mode-tab .tab-icon { font-size: 1.1rem; }
+.input-mode-tab:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(79,142,247,0.07);
+}
+.input-mode-tab.active {
+  background: rgba(79,142,247,0.12);
+  border-color: rgba(79,142,247,0.6);
+  color: var(--text);
+  box-shadow: 0 0 14px rgba(79,142,247,0.15);
+}
+
+/* cURL textarea hint label */
+.curl-hint {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.curl-hint-badge {
+  background: rgba(167,139,250,0.12);
+  color: var(--accent-2);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Single-request preview card (cURL flow) */
+.request-row.curl-preview {
+  border-color: rgba(167,139,250,0.3);
+  background: rgba(167,139,250,0.06);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 640px) {
@@ -770,6 +834,7 @@ body {
   .thresholds-grid { grid-template-columns: 1fr; }
   .k6-modules-grid { grid-template-columns: 1fr; }
   .mode-tabs { flex-direction: column; }
+  .input-mode-tabs { flex-direction: column; }
   .request-url { display: none; }
   .collection-summary { flex-wrap: wrap; gap: 16px; }
 }

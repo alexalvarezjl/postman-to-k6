@@ -55,38 +55,78 @@
       <div class="step-header">
         <div class="step-number active" id="step-num-1">1</div>
         <div>
-          <h2 class="step-title">Importar colección Postman</h2>
-          <p class="step-desc">Arrastra un archivo .json o pega el contenido directamente</p>
+          <h2 class="step-title">Importar colección / cURL</h2>
+          <p class="step-desc" id="step1-desc">Arrastra un archivo .json o pega el contenido directamente</p>
         </div>
       </div>
 
-      <div class="import-area" id="drop-zone">
-        <div class="drop-icon">📂</div>
-        <p class="drop-text">Arrastra tu colección Postman aquí</p>
-        <p class="drop-subtext">o</p>
-        <label class="btn btn-outline" for="file-input">Seleccionar archivo</label>
-        <input type="file" id="file-input" accept=".json" hidden />
-        <p class="drop-subtext">Soporta Postman Collection v2.0 y v2.1</p>
+      <!-- Input mode tab switcher -->
+      <div class="input-mode-tabs" id="input-mode-tabs">
+        <button class="input-mode-tab active" data-input-mode="postman" id="tab-postman">
+          <span class="tab-icon">📦</span>
+          <span>Colección Postman</span>
+        </button>
+        <button class="input-mode-tab" data-input-mode="curl" id="tab-curl">
+          <span class="tab-icon">🖥️</span>
+          <span>cURL (Bash)</span>
+        </button>
       </div>
 
-      <div class="divider-text">o pega el JSON directamente</div>
+      <!-- Postman import panel -->
+      <div id="postman-panel">
+        <div class="import-area" id="drop-zone">
+          <div class="drop-icon">📂</div>
+          <p class="drop-text">Arrastra tu colección Postman aquí</p>
+          <p class="drop-subtext">o</p>
+          <label class="btn btn-outline" for="file-input">Seleccionar archivo</label>
+          <input type="file" id="file-input" accept=".json" hidden />
+          <p class="drop-subtext">Soporta Postman Collection v2.0 y v2.1</p>
+        </div>
 
-      <div class="paste-area">
-        <textarea
-          id="json-input"
-          class="json-textarea"
-          placeholder='{ "info": { "name": "Mi API", ... }, "item": [...] }'
-          rows="8"
-          spellcheck="false"
-        ></textarea>
-        <div class="paste-actions">
-          <span id="json-status" class="json-status"></span>
-          <button id="btn-parse" class="btn btn-primary">
-            <span>Analizar colección</span>
-            <span class="btn-icon">→</span>
-          </button>
+        <div class="divider-text">o pega el JSON directamente</div>
+
+        <div class="paste-area">
+          <textarea
+            id="json-input"
+            class="json-textarea"
+            placeholder='{ "info": { "name": "Mi API", ... }, "item": [...] }'
+            rows="8"
+            spellcheck="false"
+          ></textarea>
+          <div class="paste-actions">
+            <span id="json-status" class="json-status"></span>
+            <button id="btn-parse" class="btn btn-primary">
+              <span>Analizar colección</span>
+              <span class="btn-icon">→</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- cURL input panel -->
+      <div id="curl-panel" style="display:none">
+        <div class="curl-hint">
+          <span class="curl-hint-badge">Bash</span>
+          Pega tu comando cURL completo (soporta multilinea con <code style="font-size:0.78rem;color:var(--accent-2)">\</code>)
+        </div>
+        <div class="paste-area">
+          <textarea
+            id="curl-input"
+            class="json-textarea"
+            placeholder="curl -X POST 'https://api.example.com/endpoint' \&#10;  -H 'Authorization: Bearer TOKEN' \&#10;  -H 'Content-Type: application/json' \&#10;  -d '{\"key\": \"value\"}'"
+            rows="8"
+            spellcheck="false"
+          ></textarea>
+          <div class="paste-actions">
+            <span id="curl-status" class="json-status"></span>
+            <button id="btn-parse-curl" class="btn btn-primary">
+              <span>Convertir cURL</span>
+              <span class="btn-icon">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Step 2: Preview requests -->
@@ -94,8 +134,8 @@
       <div class="step-header">
         <div class="step-number" id="step-num-2">2</div>
         <div>
-          <h2 class="step-title">Requests detectadas</h2>
-          <p class="step-desc">Revisa y selecciona las requests que deseas incluir</p>
+          <h2 class="step-title" id="step2-title">Requests detectadas</h2>
+          <p class="step-desc" id="step2-desc">Revisa y selecciona las requests que deseas incluir</p>
         </div>
         <div class="step-actions" id="preview-actions" style="display:none">
           <button id="btn-select-all" class="btn btn-ghost btn-sm">Seleccionar todo</button>
@@ -467,6 +507,7 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="curl-parser.js"></script>
   <script src="converter.js"></script>
   <script src="app.js"></script>
 </body>
