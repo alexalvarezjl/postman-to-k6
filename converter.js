@@ -479,9 +479,17 @@ function buildUrlExpression(req, baseUrl, config) {
   let url = req.url;
   const useModular = config && config.useSetup !== false;
 
-  // Strip explicit baseUrl override prefix
-  if (baseUrl && url.startsWith(baseUrl)) {
-    url = url.slice(baseUrl.length).replace(/^\//, '');
+  // Detect whether the URL has any Postman variable placeholders
+  const hasPostmanVars = /\{\{\w+\}\}/.test(url);
+
+  // Strip explicit baseUrl override prefix only when there are no Postman vars
+  // (if there are Postman vars the first one already becomes envConfig.apiUrl)
+  if (baseUrl && url.startsWith(baseUrl) && !hasPostmanVars) {
+    // Only strip if a baseUrl override was explicitly provided by the user config,
+    // not when it was auto-detected — this preserves full URLs from cURL inputs.
+    if (config && config.baseUrl && config.baseUrl.trim()) {
+      url = url.slice(baseUrl.length).replace(/^\//, '');
+    }
   }
 
   if (useModular) {

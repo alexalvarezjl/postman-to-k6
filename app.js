@@ -9,6 +9,7 @@
 const state = {
   collection: null,  // { name, requests, variables }
   currentMode: 'simple',
+  inputMode: 'postman',   // 'postman' | 'curl'
   generatedScript: '',
   scriptFilename: 'load-test.js'
 };
@@ -67,6 +68,15 @@ const DOM = {
   cfgOnBehalfOf:  $('cfg-on-behalf-of'),
   cfgUseSummary:  $('cfg-use-summary'),
   cfgReportPath:  $('cfg-report-path'),
+
+  // Input mode tabs + panels
+  tabPostman:    $('tab-postman'),
+  tabCurl:       $('tab-curl'),
+  postmanPanel:  $('postman-panel'),
+  curlPanel:     $('curl-panel'),
+  curlInput:     $('curl-input'),
+  curlStatus:    $('curl-status'),
+  btnParseCurl:  $('btn-parse-curl'),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,6 +89,36 @@ DOM.cfgUseSetup.addEventListener('change', function () {
 DOM.cfgUseSummary.addEventListener('change', function () {
   $('module-summary-body').style.display = this.checked ? '' : 'none';
   $('module-summary-body').style.opacity = this.checked ? '1' : '0.4';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUT MODE TAB SWITCHER
+// ─────────────────────────────────────────────────────────────────────────────
+[DOM.tabPostman, DOM.tabCurl].forEach(tab => {
+  tab.addEventListener('click', () => {
+    const mode = tab.dataset.inputMode;
+    if (mode === state.inputMode) return;
+    state.inputMode = mode;
+
+    DOM.tabPostman.classList.toggle('active', mode === 'postman');
+    DOM.tabCurl.classList.toggle('active', mode === 'curl');
+
+    DOM.postmanPanel.style.display = mode === 'postman' ? '' : 'none';
+    DOM.curlPanel.style.display    = mode === 'curl'    ? '' : 'none';
+
+    // Update step 1 description
+    const step1desc = $('step1-desc');
+    if (step1desc) {
+      step1desc.textContent = mode === 'postman'
+        ? 'Arrastra un archivo .json o pega el contenido directamente'
+        : 'Pega tu comando cURL de Bash y gen\u00e9ralo en k6';
+    }
+
+    // Reset step 3 button so it re-renders when mode changes
+    step3BtnAdded = false;
+    const oldBtn = DOM.stepPreview.querySelector('.btn.btn-primary');
+    if (oldBtn) oldBtn.remove();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,6 +234,12 @@ function parseCollection() {
   };
   state.scriptFilename = `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'load'}-test.js`;
 
+  // Update step 2 headings for Postman mode
+  const s2title = $('step2-title');
+  const s2desc  = $('step2-desc');
+  if (s2title) s2title.textContent = 'Requests detectadas';
+  if (s2desc)  s2desc.textContent  = 'Revisa y selecciona las requests que deseas incluir';
+
   renderRequests();
   activateStep(2);
   scrollToEl(DOM.stepPreview);
@@ -294,6 +340,84 @@ function addContinueToStep3() {
     scrollToEl(DOM.stepConfig);
   });
   DOM.stepPreview.appendChild(btn);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARSE cURL COMMAND
+// ─────────────────────────────────────────────────────────────────────────────
+DOM.btnParseCurl.addEventListener('click', parseCurlCommand);
+DOM.curlInput.addEventListener('keydown', e => {
+  // Ctrl+Enter or Cmd+Enter triggers conversion
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') parseCurlCommand();
+});
+
+function parseCurlCommand() {
+  const raw = DOM.curlInput.value.trim();
+  if (!raw) { showToast('Pega un comando cURL primero', 'error'); return; }
+
+  let req;
+  try {
+    req = CurlParser.parse(raw);
+  } catch (err) {
+    DOM.curlStatus.textContent = 'cURL inválido ✗';
+    DOM.curlStatus.className = 'json-status err';
+    showToast('cURL inválido: ' + err.message, 'error');
+    return;
+  }
+
+  DOM.curlStatus.textContent = 'cURL válido ✓';
+  DOM.curlStatus.className = 'json-status ok';
+
+  // Build a single-request collection in the same shape as the Postman flow
+  state.collection = {
+    name: req.name,
+    requests: [req],
+    variables: [],
+    folderCount: 0
+  };
+  const slug = req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
+  state.scriptFilename = `${slug}-test.js`;
+
+  // Update step 2 headings for cURL mode
+  const s2title = $('step2-title');
+  const s2desc  = $('step2-desc');
+  if (s2title) s2title.textContent = 'Request detectada';
+  if (s2desc)  s2desc.textContent  = 'Revisa el request que será convertido a k6';
+
+  renderCurlPreview(req);
+  activateStep(2);
+  scrollToEl(DOM.stepPreview);
+  showToast(`✅ cURL analizado — ${req.method} ${req.url}`, 'success');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER cURL PREVIEW (single request, no checkboxes)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderCurlPreview(req) {
+  const methodCls = `method-${req.method.toLowerCase()}`;
+  const headerCount = req.headers.length;
+  const bodyLabel = req.body ? `· body: ${req.body.language || req.body.mode}` : '';
+
+  DOM.requestsList.innerHTML = `
+    <div class="request-row selected curl-preview" data-id="${req.id}">
+      <span class="method-badge ${methodCls}">${escHtml(req.method)}</span>
+      <span class="request-name">${escHtml(req.name)}</span>
+      <span class="request-url">${escHtml(req.url)}</span>
+    </div>
+    <div style="font-size:0.78rem;color:var(--text-dim);padding:6px 14px;">
+      ${headerCount} header${headerCount !== 1 ? 's' : ''}${bodyLabel}
+      ${req.queryParams.length ? ` · ${req.queryParams.length} query param${req.queryParams.length !== 1 ? 's' : ''}` : ''}
+    </div>
+  `;
+
+  // Show summary, hide multi-select actions
+  DOM.collSummary.style.display   = 'flex';
+  DOM.previewActions.style.display = 'none';
+  DOM.summaryTotal.textContent    = '1';
+  DOM.summarySelected.textContent = '1';
+  DOM.summaryFolders.textContent  = '0';
+
+  addContinueToStep3();
 }
 
 // Bulk select / deselect
