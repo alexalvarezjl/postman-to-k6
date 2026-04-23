@@ -1,6 +1,6 @@
-# ⚡ Postman → k6 Converter
+# ⚡ Postman / cURL → k6 Converter
 
-> Convierte colecciones de Postman en scripts de k6 listos para ejecutar pruebas de carga y performance, **sin escribir una sola línea de código** y **100% en el navegador**.
+> Convierte colecciones de Postman o comandos cURL (Bash) en scripts de k6 listos para ejecutar pruebas de carga y performance, **sin escribir una sola línea de código** y **100% en el navegador**.
 
 ![Demo](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
@@ -47,6 +47,7 @@ No requiere servidor, backend ni instalación. Abre el `index.html` en cualquier
 |---|---|
 | 🗂️ **Importación flexible** | Arrastra y suelta el JSON o pégalo directamente en el editor |
 | ✅ **Soporte v2.0 y v2.1** | Compatible con ambas versiones del formato de colección de Postman |
+| 🖥️ **Soporte cURL** | Pega comandos cURL (Bash) completos y conviértelos directamente a k6 |
 | 🔍 **Selección de requests** | Elige cuáles requests incluir en el script generado |
 | 📁 **Soporte de carpetas** | Respeta la jerarquía de folders de la colección, con colapso/expansión |
 | 🚀 **Tres modos de carga** | Simple, Stages (ramp-up/down) y Ramping VUs con executor avanzado |
@@ -70,6 +71,7 @@ No requiere servidor, backend ni instalación. Abre el `index.html` en cualquier
 postman-to-k6/
 ├── index.html      # Estructura HTML + UI de 4 pasos
 ├── style.css       # Sistema de diseño completo (dark mode, tokens CSS)
+├── curl-parser.js  # Lógica de parsing de comandos cURL
 ├── converter.js    # Lógica de parsing y generación de código k6
 └── app.js          # Orquestación UI, eventos, estado y renderizado
 ```
@@ -104,8 +106,11 @@ postman-to-k6/
 
 ## 🎯 Cómo usar
 
-### Paso 1 — Importar colección
+### Paso 1 — Importar colección / cURL
 
+Tienes dos opciones:
+
+**Opción A: Colección Postman**
 Exporta tu colección desde Postman:
 1. Abre Postman → selecciona tu colección
 2. Click en `···` → **Export**
@@ -115,9 +120,10 @@ Exporta tu colección desde Postman:
 Luego, en la herramienta:
 - **Arrastra** el archivo `.json` sobre la zona de drop, o
 - **Haz click** en "Seleccionar archivo", o
-- **Pega** el JSON directamente en el textarea
+- **Pega** el JSON directamente en el textarea.
 
-El textarea valida el JSON en tiempo real e indica si es válido o no.
+**Opción B: cURL (Bash)**
+Selecciona la pestaña "cURL (Bash)" y pega tu comando completo (ideal para peticiones extraídas desde las DevTools del navegador, Swagger u OpenAPI). La herramienta soporta comandos multilínea (separados por `\`) y extraerá de forma automática el método HTTP, encabezados (headers), carga útil (payload/body), parámetros de búsqueda (query params) y mecanismos de autenticación a partir de los flags del comando proporcionado.
 
 ### Paso 2 — Revisar requests
 
@@ -268,6 +274,24 @@ const params_abc123 = {
 | `form-data` | Objeto JS (campos de texto únicamente, sin archivos) |
 | `GraphQL` | `JSON.stringify({ query, variables })` |
 
+### Mapeo de comandos cURL (Bash)
+
+El intérprete nativo de cURL analiza exhaustivamente el comando proporcionado y lo mapea de forma semántica a la configuración de k6. A continuación se detallan los flags soportados y su comportamiento:
+
+| Flag cURL soportado | Acción o mapeo generado en k6 |
+|---|---|
+| **URL Posicional** o `--url` | Extrae la URL base y desglosa los query parameters. |
+| `-X` / `--request` | Define el método HTTP (`GET`, `POST`, `PUT`, `DELETE`, etc.). Si se omite, deduce `GET` por defecto, o `POST` si existe un payload de datos. |
+| `-H` / `--header` | Mapea e inyecta los encabezados de la petición dentro del objeto `params.headers`. |
+| `-d` / `--data` / `--data-raw` / `--data-binary` | Define el cuerpo de la petición. Detecta automáticamente si el contenido es JSON (inyectando `Content-Type` de ser necesario). |
+| `--data-urlencode` | Define el cuerpo como `application/x-www-form-urlencoded` y estructura los datos adecuadamente. |
+| `--json` | Asigna el cuerpo de la petición y fuerza el encabezado `Content-Type: application/json`. |
+| `-u` / `--user` | Codifica automáticamente las credenciales en Base64 generando el encabezado `Authorization: Basic <user:pass>`. |
+| `-b` / `--cookie` | Asigna las cookies especificadas mediante el encabezado `Cookie`. |
+| `-A` / `--user-agent` | Establece la identidad del cliente inyectando el encabezado `User-Agent`. |
+
+> **Nota para equipos de QA:** Los flags informativos, de conexión o formato (como `-L`, `--location`, `--compressed`, `-k`, `--insecure`, `-s`, `-v`) son asimilados correctamente por el parser para evitar errores de sintaxis, pero se omiten en la exportación, dado que k6 gestiona la compresión, redirecciones y certificados localmente durante su ejecución nativa.
+
 ### Query parameters
 Los query params se preservan como parte de la URL usando template literals:
 ```js
@@ -400,6 +424,9 @@ Sistema de diseño completo con:
 - **Micro-animaciones**: `fadeInUp`, `fadeInDown`, `slideInRight`, `pulse`
 - **Toast notifications** animadas
 
+### `curl-parser.js` (~300 líneas)
+Parser dedicado que convierte un comando cURL (Bash) crudo en el objeto de request normalizado que el generador puede entender. Maneja división de tokens, strings multilínea con escapes, y flags cortas/largas.
+
 ### `converter.js` (~580 líneas)
 Motor de conversión con API pública en `window.PostmanConverter`:
 
@@ -430,6 +457,7 @@ Orquestación de la UI:
 State:
 ├── collection      { name, requests, variables, folderCount }
 ├── currentMode     'simple' | 'stages' | 'ramping'
+├── inputMode       'postman' | 'curl'
 ├── generatedScript string
 └── scriptFilename  string
 
