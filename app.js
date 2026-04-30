@@ -510,11 +510,12 @@ DOM.modeTabs.forEach(tab => {
 
 let stageCount = 3;
 DOM.btnAddStage.addEventListener('click', () => {
+  const idx = stageCount++;
   const row = document.createElement('div');
   row.className = 'stage-row';
-  row.dataset.stage = stageCount++;
+  row.dataset.stage = idx;
   row.innerHTML = `
-    <span class="stage-label">Stage ${stageCount}</span>
+    <span class="stage-label">Stage ${idx + 1}</span>
     <div class="input-with-unit">
       <input type="number" class="config-input stage-duration" value="30" min="1" />
       <span class="input-unit">seg</span>
@@ -524,8 +525,9 @@ DOM.btnAddStage.addEventListener('click', () => {
       <input type="number" class="config-input stage-target" value="10" min="0" />
       <span class="input-unit">VUs</span>
     </div>
-    <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="this.closest('.stage-row').remove()">\u2715</button>
+    <button class="btn btn-ghost btn-sm stage-remove-btn" style="padding:4px 8px">\u2715</button>
   `;
+  row.querySelector('.stage-remove-btn').addEventListener('click', () => row.remove());
   DOM.stagesList.appendChild(row);
 });
 
@@ -677,7 +679,8 @@ function escHtml(s) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function scrollToEl(el) {

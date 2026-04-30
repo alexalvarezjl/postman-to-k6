@@ -26,7 +26,7 @@
       </div>
       <nav class="header-nav">
         <a href="#how-it-works" class="nav-link">¿Cómo funciona?</a>
-        <a href="https://k6.io/docs/" target="_blank" class="nav-link">Docs k6 ↗</a>
+        <a href="https://k6.io/docs/" target="_blank" rel="noopener noreferrer" class="nav-link" id="nav-docs">Docs k6 ↗</a>
       </nav>
     </div>
   </header>
@@ -46,6 +46,18 @@
       ejecutar pruebas de carga y performance, sin escribir código.
     </p>
   </section>
+
+  <!-- Target framework toggle -->
+  <div class="target-toggle-wrapper">
+    <div class="target-toggle" id="target-framework-toggle">
+      <button class="target-btn active" data-target="k6">
+        <span class="target-icon">⚡</span> k6
+      </button>
+      <button class="target-btn" data-target="cypress">
+        <span class="target-icon">🌲</span> Cypress
+      </button>
+    </div>
+  </div>
 
   <!-- Main app -->
   <main class="app-container" id="app">
@@ -85,7 +97,7 @@
 
         <div class="divider-text">o pega el JSON directamente</div>
 
-        <div class="pastiv class="paste-area">
+        <div class="paste-area">
           <textarea
             id="json-input"
             class="json-textarea"
@@ -97,7 +109,7 @@
             <span id="json-status" class="json-status"></span>
             <button id="btn-parse" class="btn btn-primary">
               <span>Analizar colección</span>
-              <span class="btn-ic
+              <span class="btn-icon">→</span>
             </button>
           </div>
         </div>
@@ -186,7 +198,7 @@
               <span class="mode-icon">🚀</span>
               <span class="mode-name">Simple</span>
               <span class="mode-desc">VUs + duración fija</span>
-            </butto       </button>
+            </button>
             <button class="mode-tab" data-mode="stages" id="mode-stages">
               <span class="mode-icon">📈</span>
               <span class="mode-name">Stages</span>
@@ -195,7 +207,7 @@
             <button class="mode-tab" data-mode="ramping" id="mode-ramping">
               <span class="mode-icon">⚙️</span>
               <span class="mode-name">Ramping VUs</span>
-              <span class="mode-desc">mico</span>
+              <span class="mode-desc">Dinámico</span>
             </button>
           </div>
         </div>
@@ -506,26 +518,10 @@
     <p>Conversión 100% local · Ningún dato sale de tu navegador · Hecho con ❤️</p>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="curl-parser.js"></script>
   <script src="generators/k6-generator.js"></script>
   <script src="generators/cypress-generator.js"></script>
-  <script src="converter.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
-    </div>
-      </div>
-    </div>
-  </section>
-
-  <footer class="footer">
-    <p>Conversión 100% local · Ningún dato sale de tu navegador · Hecho con ❤️</p>
-  </footer>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="curl-parser.js"></script>
-  <script src="generators/k6-generator.js"></script>
   <script src="converter.js"></script>
   <script src="app.js"></script>
 </body>

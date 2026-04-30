@@ -89,7 +89,7 @@ const PostmanConverter = {
         const user = userObj ? userObj.value : '{{username}}';
         const pass = passObj ? passObj.value : '{{password}}';
         if (!headers.some(h => h.key.toLowerCase() === 'authorization')) {
-          headers.push({ key: 'Authorization', value: `Basic ${btoa(`${user}:${pass}`)}` });
+          headers.push({ key: 'Authorization', value: `Basic ${this.safeBtoa(`${user}:${pass}`)}` });
         }
       } else if (auth.type === 'apikey') {
         const keyObj = Array.isArray(auth.apikey) ? auth.apikey.find(b => b.key === 'key') : null;
@@ -249,6 +249,19 @@ const PostmanConverter = {
     const fns = ['http', 'check', 'sleep', 'Rate', 'Trend', 'Counter', 'Gauge', 'cy', 'describe', 'it', 'expect'];
     fns.forEach(f => { out = out.replace(new RegExp(`\\b(${f})\\b`, 'g'), '<span class="fn">$1</span>'); });
     return out;
+  },
+
+  /** Safe base64 encoding that handles non-ASCII characters */
+  safeBtoa(str) {
+    try {
+      return btoa(str);
+    } catch {
+      // Fallback for non-Latin1 characters: encode via TextEncoder
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      bytes.forEach(b => binary += String.fromCharCode(b));
+      return btoa(binary);
+    }
   }
 };
 

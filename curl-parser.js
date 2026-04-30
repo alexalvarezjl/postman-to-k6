@@ -289,7 +289,7 @@ function parseCurl(raw) {
       if (!headers.some(h => h.key.toLowerCase() === 'authorization')) {
         headers.push({
           key:   'Authorization',
-          value: `Basic ${btoa(val)}`
+          value: `Basic ${PostmanConverter.safeBtoa(val)}`
         });
       }
       i += 2;
@@ -300,7 +300,7 @@ function parseCurl(raw) {
       if (!headers.some(h => h.key.toLowerCase() === 'authorization')) {
         headers.push({
           key:   'Authorization',
-          value: `Basic ${btoa(val)}`
+          value: `Basic ${PostmanConverter.safeBtoa(val)}`
         });
       }
       i++;
@@ -409,6 +409,7 @@ function parseCurl(raw) {
     queryParams,
     headers,
     body,
+    postmanScript: '',
     checks: [],
     selected: true
   };
