@@ -114,6 +114,60 @@ body {
 .nav-link:hover { color: var(--text); }
 
 /* ============================================================
+   TARGET TOGGLE
+   ============================================================ */
+.target-toggle-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.target-toggle {
+  display: flex;
+  background: var(--bg-card);
+  padding: 4px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+.target-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-radius: 100px;
+  transition: all 0.3s ease;
+}
+
+.target-btn:hover {
+  color: var(--text);
+}
+
+.target-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.target-btn[data-target="cypress"].active {
+  background: #04c38e; /* Cypress Green */
+  box-shadow: 0 4px 12px rgba(4, 195, 142, 0.25);
+}
+
+.target-icon {
+  font-size: 1.1rem;
+}
+
+/* ============================================================
    HERO
    ============================================================ */
 .hero {

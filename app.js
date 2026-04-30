@@ -10,6 +10,7 @@ const state = {
   collection: null,  // { name, requests, variables }
   currentMode: 'simple',
   inputMode: 'postman',   // 'postman' | 'curl'
+  targetFramework: 'k6',  // 'k6' | 'cypress'
   generatedScript: '',
   scriptFilename: 'load-test.js'
 };
@@ -20,6 +21,10 @@ const state = {
 const $ = id => document.getElementById(id);
 
 const DOM = {
+  // Target toggle
+  targetToggle: $('target-framework-toggle'),
+  targetBtns:   document.querySelectorAll('.target-btn'),
+
   dropZone:     $('drop-zone'),
   fileInput:    $('file-input'),
   jsonInput:    $('json-input'),
@@ -80,6 +85,63 @@ const DOM = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FRAMEWORK TOGGLE
+// ─────────────────────────────────────────────────────────────────────────────
+DOM.targetBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    if (target === state.targetFramework) return;
+
+    state.targetFramework = target;
+    
+    // Update active UI state
+    DOM.targetBtns.forEach(b => b.classList.toggle('active', b.dataset.target === target));
+    
+    // Update Step 3 Visibility
+    const isK6 = target === 'k6';
+    $('step-config').querySelector('.step-title').textContent = isK6 ? 'Configurar k6' : 'Configurar Cypress';
+    $('step-config').querySelector('.step-desc').textContent = isK6 
+      ? 'Define las opciones de carga para tu prueba'
+      : 'Configura las opciones de tu suite de Cypress';
+
+    // Hide/Show K6-specific panels
+    const k6Panels = [
+      $('mode-simple').parentElement, // mode-tabs wrapper
+      $('config-simple'),
+      $('config-stages'),
+      $('config-ramping'),
+      $('th-http-duration').closest('.config-section'), // Thresholds section
+      $('module-setup-card').closest('.config-section') // Modules section
+    ];
+
+    k6Panels.forEach(p => p.style.display = isK6 ? '' : 'none');
+
+    // Update generate button text
+    DOM.btnGenerate.innerHTML = isK6 
+      ? '<span class="btn-icon">⚡</span> Generar script k6'
+      : '<span class="btn-icon">🌲</span> Generar suite Cypress';
+
+    // Update Result step text
+    $('step-result').querySelector('.step-title').textContent = isK6 ? 'Script generado' : 'Suite generada';
+    $('step-result').querySelector('.step-desc').textContent = isK6 
+      ? 'Tu script k6 listo para ejecutar'
+      : 'Tus archivos de Cypress listos para tu proyecto';
+
+    // Update run command example
+    DOM.runCmd.textContent = isK6 ? 'k6 run load-test.js' : 'npx cypress open';
+    
+    // Update Docs link
+    const navDocs = $('nav-docs');
+    if (navDocs) {
+      navDocs.textContent = isK6 ? 'Docs k6 \u2197' : 'Docs Cypress \u2197';
+      navDocs.href = isK6 ? 'https://k6.io/docs/' : 'https://docs.cypress.io/';
+    }
+    
+    state.scriptFilename = isK6 ? 'load-test.js' : 'cypress-test.cy.js';
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MODULE TOGGLES
 // ─────────────────────────────────────────────────────────────────────────────
 DOM.cfgUseSetup.addEventListener('change', function () {
@@ -137,7 +199,7 @@ function activateStep(n) {
   });
   [DOM.stepNum1, DOM.stepNum2, DOM.stepNum3, DOM.stepNum4].forEach((el, i) => {
     el.classList.remove('active', 'done');
-    if (i + 1 < n) el.classList.add('done'), el.textContent = '✓';
+    if (i + 1 < n) el.classList.add('done'), el.textContent = '\u2713';
     else if (i + 1 === n) el.classList.add('active'), el.textContent = i + 1;
     else el.textContent = i + 1;
   });
@@ -168,7 +230,7 @@ function readFile(file) {
   const reader = new FileReader();
   reader.onload = ev => {
     DOM.jsonInput.value = ev.target.result;
-    setJsonStatus('Archivo cargado ✓', 'ok');
+    setJsonStatus('Archivo cargado \u2713', 'ok');
   };
   reader.readAsText(file);
 }
@@ -179,9 +241,9 @@ DOM.jsonInput.addEventListener('input', () => {
   if (!val) { setJsonStatus('', ''); return; }
   try {
     JSON.parse(val);
-    setJsonStatus('JSON válido ✓', 'ok');
+    setJsonStatus('JSON v\u00e1lido \u2713', 'ok');
   } catch {
-    setJsonStatus('JSON inválido ✗', 'err');
+    setJsonStatus('JSON inv\u00e1lido \u2717', 'err');
   }
 });
 
@@ -197,26 +259,26 @@ DOM.btnParse.addEventListener('click', parseCollection);
 
 function parseCollection() {
   const raw = DOM.jsonInput.value.trim();
-  if (!raw) { showToast('Pega o sube una colección primero', 'error'); return; }
+  if (!raw) { showToast('Pega o sube una colecci\u00f3n primero', 'error'); return; }
 
   let json;
   try {
     json = JSON.parse(raw);
   } catch {
-    showToast('JSON inválido — revisa el formato', 'error');
+    showToast('JSON inv\u00e1lido \u2014 revisa el formato', 'error');
     return;
   }
 
   // Validate basic Postman structure
   if (!json.info || !Array.isArray(json.item)) {
-    showToast('No parece ser una colección Postman válida (falta info o item)', 'error');
+    showToast('No parece ser una colecci\u00f3n Postman v\u00e1lida (falta info o item)', 'error');
     return;
   }
 
   const { requests, folders } = PostmanConverter.extractRequests(json.item);
 
   if (requests.length === 0) {
-    showToast('No se encontraron requests en la colección', 'error');
+    showToast('No se encontraron requests en la colecci\u00f3n', 'error');
     return;
   }
 
@@ -227,12 +289,14 @@ function parseCollection() {
   }
 
   state.collection = {
-    name: json.info.name || 'Mi Colección',
+    name: json.info.name || 'Mi Colecci\u00f3n',
     requests,
     variables,
     folderCount: folders.size
   };
-  state.scriptFilename = `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'load'}-test.js`;
+  state.scriptFilename = state.targetFramework === 'k6' 
+    ? `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'load'}-test.js`
+    : `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'api'}-test.cy.js`;
 
   // Update step 2 headings for Postman mode
   const s2title = $('step2-title');
@@ -243,7 +307,7 @@ function parseCollection() {
   renderRequests();
   activateStep(2);
   scrollToEl(DOM.stepPreview);
-  showToast(`✅ ${requests.length} requests encontradas`, 'success');
+  showToast(`\u2705 ${requests.length} requests encontradas`, 'success');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -251,7 +315,7 @@ function parseCollection() {
 // ─────────────────────────────────────────────────────────────────────────────
 function renderRequests() {
   const { requests, folderCount } = state.collection;
-  const grouped = groupByFolder(requests);
+  const grouped = PostmanConverter.groupByFolder(requests);
   const container = DOM.requestsList;
   container.innerHTML = '';
 
@@ -261,8 +325,8 @@ function renderRequests() {
       folderEl.className = 'folder-group';
       folderEl.innerHTML = `
         <div class="folder-header" data-folder="${escHtml(folder)}">
-          <span class="folder-chevron open">▶</span>
-          <span>📁 ${escHtml(folder)}</span>
+          <span class="folder-chevron open">\u25b6</span>
+          <span>\ud83d\udcc1 ${escHtml(folder)}</span>
           <span style="margin-left:auto;font-size:0.75rem;font-weight:400">${reqs.length} requests</span>
         </div>
         <div class="folder-items" data-folder-items="${escHtml(folder)}">
@@ -334,7 +398,7 @@ function addContinueToStep3() {
   const btn = document.createElement('button');
   btn.className = 'btn btn-primary';
   btn.style.marginTop = '20px';
-  btn.innerHTML = '<span>Configurar k6</span><span class="btn-icon">→</span>';
+  btn.innerHTML = `<span>Configurar ${state.targetFramework}</span><span class="btn-icon">\u2192</span>`;
   btn.addEventListener('click', () => {
     activateStep(3);
     scrollToEl(DOM.stepConfig);
@@ -347,7 +411,6 @@ function addContinueToStep3() {
 // ─────────────────────────────────────────────────────────────────────────────
 DOM.btnParseCurl.addEventListener('click', parseCurlCommand);
 DOM.curlInput.addEventListener('keydown', e => {
-  // Ctrl+Enter or Cmd+Enter triggers conversion
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') parseCurlCommand();
 });
 
@@ -359,16 +422,15 @@ function parseCurlCommand() {
   try {
     req = CurlParser.parse(raw);
   } catch (err) {
-    DOM.curlStatus.textContent = 'cURL inválido ✗';
+    DOM.curlStatus.textContent = 'cURL inv\u00e1lido \u2717';
     DOM.curlStatus.className = 'json-status err';
-    showToast('cURL inválido: ' + err.message, 'error');
+    showToast('cURL inv\u00e1lido: ' + err.message, 'error');
     return;
   }
 
-  DOM.curlStatus.textContent = 'cURL válido ✓';
+  DOM.curlStatus.textContent = 'cURL v\u00e1lido \u2713';
   DOM.curlStatus.className = 'json-status ok';
 
-  // Build a single-request collection in the same shape as the Postman flow
   state.collection = {
     name: req.name,
     requests: [req],
@@ -376,27 +438,23 @@ function parseCurlCommand() {
     folderCount: 0
   };
   const slug = req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
-  state.scriptFilename = `${slug}-test.js`;
+  state.scriptFilename = state.targetFramework === 'k6' ? `${slug}-test.js` : `${slug}-test.cy.js`;
 
-  // Update step 2 headings for cURL mode
   const s2title = $('step2-title');
   const s2desc  = $('step2-desc');
   if (s2title) s2title.textContent = 'Request detectada';
-  if (s2desc)  s2desc.textContent  = 'Revisa el request que será convertido a k6';
+  if (s2desc)  s2desc.textContent  = 'Revisa el request que ser\u00e1 convertido';
 
   renderCurlPreview(req);
   activateStep(2);
   scrollToEl(DOM.stepPreview);
-  showToast(`✅ cURL analizado — ${req.method} ${req.url}`, 'success');
+  showToast(`\u2705 cURL analizado \u2014 ${req.method} ${req.url}`, 'success');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RENDER cURL PREVIEW (single request, no checkboxes)
-// ─────────────────────────────────────────────────────────────────────────────
 function renderCurlPreview(req) {
   const methodCls = `method-${req.method.toLowerCase()}`;
   const headerCount = req.headers.length;
-  const bodyLabel = req.body ? `· body: ${req.body.language || req.body.mode}` : '';
+  const bodyLabel = req.body ? `\u00b7 body: ${req.body.language || req.body.mode}` : '';
 
   DOM.requestsList.innerHTML = `
     <div class="request-row selected curl-preview" data-id="${req.id}">
@@ -406,11 +464,10 @@ function renderCurlPreview(req) {
     </div>
     <div style="font-size:0.78rem;color:var(--text-dim);padding:6px 14px;">
       ${headerCount} header${headerCount !== 1 ? 's' : ''}${bodyLabel}
-      ${req.queryParams.length ? ` · ${req.queryParams.length} query param${req.queryParams.length !== 1 ? 's' : ''}` : ''}
+      ${req.queryParams.length ? ` \u00b7 ${req.queryParams.length} query param${req.queryParams.length !== 1 ? 's' : ''}` : ''}
     </div>
   `;
 
-  // Show summary, hide multi-select actions
   DOM.collSummary.style.display   = 'flex';
   DOM.previewActions.style.display = 'none';
   DOM.summaryTotal.textContent    = '1';
@@ -420,7 +477,6 @@ function renderCurlPreview(req) {
   addContinueToStep3();
 }
 
-// Bulk select / deselect
 DOM.btnSelectAll.addEventListener('click', () => {
   state.collection.requests.forEach(r => r.selected = true);
   document.querySelectorAll('.request-check').forEach(cb => {
@@ -452,7 +508,6 @@ DOM.modeTabs.forEach(tab => {
   });
 });
 
-// Stages — add stage
 let stageCount = 3;
 DOM.btnAddStage.addEventListener('click', () => {
   const row = document.createElement('div');
@@ -464,12 +519,12 @@ DOM.btnAddStage.addEventListener('click', () => {
       <input type="number" class="config-input stage-duration" value="30" min="1" />
       <span class="input-unit">seg</span>
     </div>
-    <span class="stage-arrow">→</span>
+    <span class="stage-arrow">\u2192</span>
     <div class="input-with-unit">
       <input type="number" class="config-input stage-target" value="10" min="0" />
       <span class="input-unit">VUs</span>
     </div>
-    <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="this.closest('.stage-row').remove()">✕</button>
+    <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="this.closest('.stage-row').remove()">\u2715</button>
   `;
   DOM.stagesList.appendChild(row);
 });
@@ -479,13 +534,11 @@ DOM.btnAddStage.addEventListener('click', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 function readConfig() {
   const mode = state.currentMode;
-
   const config = {
     mode,
     sleep: parseFloat($('cfg-sleep').value) || 0,
     baseUrl: $('cfg-base-url').value.trim(),
     thresholds: readThresholds(),
-    // k6 project modules
     useSetup:        DOM.cfgUseSetup.checked,
     authPath:        DOM.cfgAuthPath.value.trim(),
     envPath:         DOM.cfgEnvPath.value.trim(),
@@ -511,13 +564,11 @@ function readConfig() {
     config.peakVUs = parseInt($('cfg-peak-vus').value) || 100;
     config.rampDuration = parseInt($('cfg-ramp-duration').value) || 120;
   }
-
   return config;
 }
 
 function readThresholds() {
   const thresholds = [];
-
   if ($('th-http-duration').checked) {
     const val = parseFloat($('th-http-duration-val').value) || 500;
     thresholds.push({ metric: 'http_req_duration', condition: `p(95)<${val}` });
@@ -538,108 +589,84 @@ function readThresholds() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GENERATE
+// GENERATE SCRIPT
 // ─────────────────────────────────────────────────────────────────────────────
 DOM.btnGenerate.addEventListener('click', () => {
-  if (!state.collection) { showToast('Primero importa una colección', 'error'); return; }
+  if (!state.collection) return;
 
   const config = readConfig();
-  let script;
+  const target = state.targetFramework;
+
   try {
-    script = PostmanConverter.generateK6Script(state.collection, config);
+    let script = '';
+    if (target === 'k6') {
+      script = window.K6Generator.generateK6Script(state.collection, config);
+    } else {
+      script = window.CypressGenerator.generateCypressScript(state.collection, config);
+    }
+
+    state.generatedScript = script;
+    DOM.codeContent.innerHTML = PostmanConverter.highlightCode(script);
+    
+    const lines = script.split('\n').length;
+    DOM.codeLines.textContent = `${lines} l\u00edneas`;
+
+    activateStep(4);
+    scrollToEl(DOM.stepResult);
+    showToast(`Script de ${target.toUpperCase()} generado con \u00e9xito`);
+
   } catch (err) {
     showToast(err.message, 'error');
-    return;
   }
-
-  state.generatedScript = script;
-
-  const lines = script.split('\n');
-  DOM.codeLines.textContent = `${lines.length} líneas`;
-  DOM.codeContent.innerHTML = PostmanConverter.highlightK6(script);
-
-  DOM.runCmd.textContent = `k6 run ${state.scriptFilename}`;
-
-  activateStep(4);
-  scrollToEl(DOM.stepResult);
-  showToast('✅ Script generado exitosamente', 'success');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COPY & DOWNLOAD
 // ─────────────────────────────────────────────────────────────────────────────
-DOM.btnCopy.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(state.generatedScript);
-    DOM.btnCopy.textContent = '✅ Copiado!';
-    setTimeout(() => { DOM.btnCopy.innerHTML = '📋 Copiar'; }, 2000);
-  } catch {
-    showToast('No se pudo copiar — usa Ctrl+A en el código', 'error');
-  }
+DOM.btnCopy.addEventListener('click', () => {
+  if (!state.generatedScript) return;
+  navigator.clipboard.writeText(state.generatedScript).then(() => {
+    showToast('Copiado al portapapeles');
+  });
 });
 
 DOM.btnDownload.addEventListener('click', () => {
-  const blob = new Blob([state.generatedScript], { type: 'text/javascript' });
+  if (!state.generatedScript) return;
+  const blob = new Blob([state.generatedScript], { type: 'application/javascript' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = state.scriptFilename;
   a.click();
   URL.revokeObjectURL(url);
-  showToast(`⬇️ Descargando ${state.scriptFilename}`, 'success');
 });
 
 DOM.btnDownloadPerRequest.addEventListener('click', async () => {
-  if (!state.collection) { showToast('Primero importa una coleccion', 'error'); return; }
-
+  if (!state.collection) return;
   const config = readConfig();
-  let scripts;
-  try {
-    scripts = PostmanConverter.generateK6ScriptsPerRequest(state.collection, config);
-  } catch (err) {
-    showToast(err.message, 'error');
-    return;
-  }
+  const target = state.targetFramework;
+  const zip = new JSZip();
 
-  if (scripts.length === 1) {
-    // Only one request — download directly, no ZIP needed
-    const { filename, content } = scripts[0];
-    const blob = new Blob([content], { type: 'text/javascript' });
-    const url = URL.createObjectURL(blob);
+  try {
+    if (target === 'k6') {
+      const scripts = PostmanConverter.generateK6ScriptsPerRequest(state.collection, config);
+      scripts.forEach(s => zip.file(s.filename, s.content));
+    } else {
+      const files = window.CypressGenerator.generateCypressProject(state.collection, config);
+      files.forEach(f => zip.file(f.filename, f.content));
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename;
+    a.download = target === 'k6' ? 'k6-scripts.zip' : 'cypress-project.zip';
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`⬇️ Descargando ${filename}`, 'success');
-    return;
+    showToast('Archivo .zip generado');
+  } catch (err) {
+    showToast(err.message, 'error');
   }
-
-  // Multiple requests — bundle into a ZIP
-  if (typeof JSZip === 'undefined') {
-    showToast('JSZip no cargado — revisa tu conexion a internet', 'error');
-    return;
-  }
-  const zip = new JSZip();
-  scripts.forEach(({ filename, content }) => {
-    zip.file(filename, content);
-  });
-
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
-  const collectionSlug = state.collection.name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40);
-  const zipName = `${collectionSlug}-k6-scripts.zip`;
-
-  const url = URL.createObjectURL(zipBlob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = zipName;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast(`⬇️ Descargando ${zipName} (${scripts.length} archivos)`, 'success');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -651,16 +678,6 @@ function escHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function groupByFolder(requests) {
-  const map = new Map();
-  for (const req of requests) {
-    const key = req.folder || '';
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(req);
-  }
-  return map;
 }
 
 function scrollToEl(el) {
