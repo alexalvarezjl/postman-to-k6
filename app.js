@@ -61,9 +61,12 @@ const DOM = {
   btnCopy:     $('btn-copy'),
   btnDownload: $('btn-download'),
   btnDownloadPerRequest: $('btn-download-per-request'),
+  codeLang:    $('code-lang'),
   codeContent: $('code-content'),
   codeLines:   $('code-lines'),
   runCmd:      $('run-cmd'),
+  runStepsK6:  $('run-steps-k6'),
+  runStepsCy:  $('run-steps-cypress'),
 
   // k6 modules
   cfgUseSetup:    $('cfg-use-setup'),
@@ -127,8 +130,16 @@ DOM.targetBtns.forEach(btn => {
       ? 'Tu script k6 listo para ejecutar'
       : 'Tus archivos de Cypress listos para tu proyecto';
 
-    // Update run command example
-    DOM.runCmd.textContent = isK6 ? 'k6 run load-test.js' : 'npx cypress open';
+    // Update language label
+    if (DOM.codeLang) {
+      DOM.codeLang.textContent = isK6 ? 'javascript · k6' : 'javascript · cypress';
+    }
+
+    // Update run instructions visibility
+    if (DOM.runStepsK6 && DOM.runStepsCy) {
+      DOM.runStepsK6.classList.toggle('hidden', !isK6);
+      DOM.runStepsCy.classList.toggle('hidden', isK6);
+    }
     
     // Update Docs link
     const navDocs = $('nav-docs');
