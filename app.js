@@ -114,7 +114,7 @@ DOM.targetBtns.forEach(btn => {
       $('module-setup-card').closest('.config-section') // Modules section
     ];
 
-    k6Panels.forEach(p => p.style.display = isK6 ? '' : 'none');
+    k6Panels.forEach(p => p.classList.toggle('hidden', !isK6));
 
     // Update generate button text
     DOM.btnGenerate.innerHTML = isK6 
@@ -165,8 +165,8 @@ DOM.cfgUseSummary.addEventListener('change', function () {
     DOM.tabPostman.classList.toggle('active', mode === 'postman');
     DOM.tabCurl.classList.toggle('active', mode === 'curl');
 
-    DOM.postmanPanel.style.display = mode === 'postman' ? '' : 'none';
-    DOM.curlPanel.style.display    = mode === 'curl'    ? '' : 'none';
+    DOM.postmanPanel.classList.toggle('hidden', mode !== 'postman');
+    DOM.curlPanel.classList.toggle('hidden', mode !== 'curl');
 
     // Update step 1 description
     const step1desc = $('step1-desc');
@@ -363,8 +363,8 @@ function renderRequests() {
   });
 
   // Show summary
-  DOM.collSummary.style.display = 'flex';
-  DOM.previewActions.style.display = 'flex';
+  DOM.collSummary.classList.remove('hidden');
+  DOM.previewActions.classList.remove('hidden');
   DOM.summaryFolders.textContent = folderCount;
   updateSummary();
 
@@ -462,14 +462,14 @@ function renderCurlPreview(req) {
       <span class="request-name">${escHtml(req.name)}</span>
       <span class="request-url">${escHtml(req.url)}</span>
     </div>
-    <div style="font-size:0.78rem;color:var(--text-dim);padding:6px 14px;">
+    <div class="curl-preview-detail">
       ${headerCount} header${headerCount !== 1 ? 's' : ''}${bodyLabel}
       ${req.queryParams.length ? ` \u00b7 ${req.queryParams.length} query param${req.queryParams.length !== 1 ? 's' : ''}` : ''}
     </div>
   `;
 
-  DOM.collSummary.style.display   = 'flex';
-  DOM.previewActions.style.display = 'none';
+  DOM.collSummary.classList.remove('hidden');
+  DOM.previewActions.classList.add('hidden');
   DOM.summaryTotal.textContent    = '1';
   DOM.summarySelected.textContent = '1';
   DOM.summaryFolders.textContent  = '0';
@@ -502,9 +502,9 @@ DOM.modeTabs.forEach(tab => {
     DOM.modeTabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     state.currentMode = tab.dataset.mode;
-    DOM.configSimple.style.display  = state.currentMode === 'simple'  ? '' : 'none';
-    DOM.configStages.style.display  = state.currentMode === 'stages'  ? '' : 'none';
-    DOM.configRamping.style.display = state.currentMode === 'ramping' ? '' : 'none';
+    DOM.configSimple.classList.toggle('hidden', state.currentMode !== 'simple');
+    DOM.configStages.classList.toggle('hidden', state.currentMode !== 'stages');
+    DOM.configRamping.classList.toggle('hidden', state.currentMode !== 'ramping');
   });
 });
 

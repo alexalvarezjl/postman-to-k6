@@ -116,10 +116,10 @@
       </div>
 
       <!-- cURL input panel -->
-      <div id="curl-panel" style="display:none">
+      <div id="curl-panel" class="hidden">
         <div class="curl-hint">
           <span class="curl-hint-badge">Bash</span>
-          Pega tu comando cURL completo (soporta multilinea con <code style="font-size:0.78rem;color:var(--accent-2)">\</code>)
+          Pega tu comando cURL completo (soporta multilinea con <code class="curl-hint-code">\</code>)
         </div>
         <div class="paste-area">
           <textarea
@@ -149,7 +149,7 @@
           <h2 class="step-title" id="step2-title">Requests detectadas</h2>
           <p class="step-desc" id="step2-desc">Revisa y selecciona las requests que deseas incluir</p>
         </div>
-        <div class="step-actions" id="preview-actions" style="display:none">
+        <div class="step-actions hidden" id="preview-actions">
           <button id="btn-select-all" class="btn btn-ghost btn-sm">Seleccionar todo</button>
           <button id="btn-deselect-all" class="btn btn-ghost btn-sm">Deseleccionar todo</button>
         </div>
@@ -162,7 +162,7 @@
         </div>
       </div>
 
-      <div id="collection-summary" class="collection-summary" style="display:none">
+      <div id="collection-summary" class="collection-summary hidden">
         <div class="summary-item">
           <span class="summary-value" id="summary-total">0</span>
           <span class="summary-label">Total requests</span>
@@ -233,50 +233,50 @@
         </div>
 
         <!-- Stages config -->
-        <div id="config-stages" class="config-panel" style="display:none">
+        <div id="config-stages" class="config-panel hidden">
           <div class="stages-container" id="stages-list">
             <div class="stage-row" data-stage="0">
               <span class="stage-label">Ramp up</span>
               <div class="input-with-unit">
-                <input type="number" class="config-input stage-duration" value="30" min="1" />
+                <input type="number" class="config-input stage-duration" value="30" min="1" title="Ramp up duration" />
                 <span class="input-unit">seg</span>
               </div>
               <span class="stage-arrow">→</span>
               <div class="input-with-unit">
-                <input type="number" class="config-input stage-target" value="50" min="0" />
+                <input type="number" class="config-input stage-target" value="50" min="0" title="Ramp up target VUs" />
                 <span class="input-unit">VUs</span>
               </div>
             </div>
             <div class="stage-row" data-stage="1">
               <span class="stage-label">Steady</span>
               <div class="input-with-unit">
-                <input type="number" class="config-input stage-duration" value="60" min="1" />
+                <input type="number" class="config-input stage-duration" value="60" min="1" title="Steady duration" />
                 <span class="input-unit">seg</span>
               </div>
               <span class="stage-arrow">→</span>
               <div class="input-with-unit">
-                <input type="number" class="config-input stage-target" value="50" min="0" />
+                <input type="number" class="config-input stage-target" value="50" min="0" title="Steady target VUs" />
                 <span class="input-unit">VUs</span>
               </div>
             </div>
             <div class="stage-row" data-stage="2">
               <span class="stage-label">Ramp down</span>
               <div class="input-with-unit">
-                <input type="number" class="config-input stage-duration" value="30" min="1" />
+                <input type="number" class="config-input stage-duration" value="30" min="1" title="Ramp down duration" />
                 <span class="input-unit">seg</span>
               </div>
               <span class="stage-arrow">→</span>
               <div class="input-with-unit">
-                <input type="number" class="config-input stage-target" value="0" min="0" />
+                <input type="number" class="config-input stage-target" value="0" min="0" title="Ramp down target VUs" />
                 <span class="input-unit">VUs</span>
               </div>
             </div>
           </div>
-          <button id="btn-add-stage" class="btn btn-ghost btn-sm" style="margin-top:8px">+ Agregar stage</button>
+          <button id="btn-add-stage" class="btn btn-ghost btn-sm">+ Agregar stage</button>
         </div>
 
         <!-- Ramping VUs config -->
-        <div id="config-ramping" class="config-panel" style="display:none">
+        <div id="config-ramping" class="config-panel hidden">
           <div class="config-row">
             <div class="config-field">
               <label class="config-label" for="cfg-start-vus">VUs iniciales</label>
