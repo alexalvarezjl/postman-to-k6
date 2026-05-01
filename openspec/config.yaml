@@ -1,0 +1,37 @@
+schema: spec-driven
+
+# Contexto Maestro del Proyecto (Lo que la IA debe saber siempre)
+context: |
+  Proyecto: Postman/cURL Converter Platform (Políglota)[cite: 2].
+  Metodología: SDD (Schema Driven Development) con OpenSpec.
+  Contrato Técnico: Todo se basa en el Intermediate Object Interface (IOI)[cite: 2].
+  Stack: Vanilla JS, k6 (Performance) y Cypress (E2E)[cite: 7].
+  Agentes: El sistema usa skills centralizadas en `.agent/skills/`[cite: 7].
+
+# Reglas por Artefacto (Cómo debe actuar cada Skill)
+rules:
+
+  # Reglas para la Skill: writing-plans y openspec-propose
+  proposals:
+    - Antes de codificar, se debe generar un plan de arquitectura detallado[cite: 3].
+    - El plan debe separar claramente los cambios requeridos en el Parser (converter.js) de los Generadores[cite: 2, 3].
+    - Definir si el cambio afecta solo a Performance (k6) o también a Funcional (Cypress)[cite: 2].
+
+  # Reglas para la Skill: k6-docs / Generación k6
+  k6_scripts:
+    - Siempre importar y configurar `handleSummary` para reportes HTML y consola[cite: 1, 4].
+    - Las peticiones deben usar `setup()` para la gestión dinámica de tokens de autenticación[cite: 1, 4].
+    - Validar que los thresholds sigan los SLOs definidos en el esquema (p. ej. http_req_failed < 1%)[cite: 1, 4].
+
+  # Reglas para la Skill: cypress-author / Generación Cypress
+  cypress_scripts:
+    - Utilizar comandos personalizados (commands.js) para centralizar el login y evitar duplicidad de código[cite: 2, 3].
+    - Generar aserciones basadas en el mapeo de `pm.expect` de Postman hacia Chai Expect[cite: 2].
+    - Mantener una estructura de carpetas que respete la jerarquía original de la colección de Postman[cite: 4].
+
+  # Reglas para la Skill: openspec-apply-change
+  code_generation:
+    - No usar bibliotecas externas pesadas; priorizar JavaScript Vanilla (ES6+)[cite: 4, 7].
+    - El código generado debe ser 100% compatible con ejecución local en el navegador[cite: 4, 7].
+    - Las variables tipo `{{variable}}` deben transformarse siempre a constantes de entorno (__ENV o Cypress.env)[cite: 4].
+    - Asegurar que ningún dato sensible de las colecciones sea enviado a endpoints externos durante la generación (Privacy by Design)[cite: 7].
