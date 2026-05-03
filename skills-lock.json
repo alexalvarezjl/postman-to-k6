@@ -12,28 +12,25 @@
       "sourceType": "github",
       "computedHash": "848fa4f55878404e6eabe115f8b255c65dc812a570bca5396a78aaf84cc2a906"
     },
-    "openspec-context-loading": {
+    "openspec-apply-change": {
       "source": "forztf/open-skilled-sdd",
       "sourceType": "github",
-      "skillPath": "skills/openspec-context-loading/SKILL.md",
-      "computedHash": "51f95fe9de7c6197f08825058d3a51c0395e5b2ff52db5b9eca2da3200ec2757"
+      "skillPath": "skills/openspec-apply-change/SKILL.md"
     },
-    "openspec-implementation": {
+    "openspec-archive-change": {
       "source": "forztf/open-skilled-sdd",
       "sourceType": "github",
-      "skillPath": "skills/openspec-implementation/SKILL.md",
-      "computedHash": "45c95f24b92b0b0a08e896e675fcbf3e61d805013a75f06e0a46b9f9ae3b4d89"
+      "skillPath": "skills/openspec-archive-change/SKILL.md"
     },
-    "openspec-proposal-creation": {
+    "openspec-explore": {
       "source": "forztf/open-skilled-sdd",
       "sourceType": "github",
-      "skillPath": "skills/openspec-proposal-creation/SKILL.md",
-      "computedHash": "9f62cab977000abb6cc5f8cd5a1ba950e694183b2db0acb6fc3eaebd78229016"
+      "skillPath": "skills/openspec-explore/SKILL.md"
     },
-    "test-driven-development": {
-      "source": "obra/superpowers",
+    "openspec-propose": {
+      "source": "forztf/open-skilled-sdd",
       "sourceType": "github",
-      "computedHash": "126f1ebf6ccd414f42544f6e83d8cc5adb089e1108eaffb7c400701e37eecd9f"
+      "skillPath": "skills/openspec-propose/SKILL.md"
     },
     "writing-plans": {
       "source": "obra/superpowers",
