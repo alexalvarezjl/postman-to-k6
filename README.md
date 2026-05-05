@@ -312,17 +312,17 @@ Si la autenticación usa variables Postman (`{{bearerToken}}`), estas se convier
 
 ---
 
-## 🧪 Conversión de tests Postman → checks k6
+## 🧪 Conversión de tests Postman → checks k6 y Cypress
 
-El parser analiza los scripts de test de Postman y convierte las aserciones más comunes a `check()` de k6:
+El sistema incorpora un **Motor Semántico de Aserciones** en el parser (`converter.js`) que analiza los scripts de test de Postman y extrae las validaciones a un modelo de datos independiente. Los generadores de k6 y Cypress consumen este modelo para crear código nativo:
 
-| Postman test | k6 check generado |
-|---|---|
-| `pm.response.to.have.status(200)` | `(r) => r.status === 200` |
-| `pm.expect(pm.response.responseTime).to.be.below(500)` | `(r) => r.timings.duration < 500` |
-| `pm.response.to.be.json` | `(r) => r.headers['Content-Type'].includes('json')` |
+| Postman test (Origen) | k6 check generado | Cypress generado |
+|---|---|---|
+| `pm.response.to.have.status(200)` | `(r) => r.status === 200` | `expect(response.status).to.eq(200)` |
+| `pm.expect(pm.response.responseTime).to.be.below(500)` | `(r) => r.timings.duration < 500` | `expect(response.duration).to.be.below(500)` |
+| `pm.response.to.be.json` | `(r) => r.headers['Content-Type'].includes('json')` | `expect(response.headers['content-type']).to.include('json')` |
 
-Los checks se agrupan por request y alimentan una métrica `Rate` personalizada (`errorRate`):
+Los checks de k6 se agrupan por request y alimentan una métrica `Rate` personalizada (`errorRate`):
 
 ```js
 const errorRate = new Rate('errors');

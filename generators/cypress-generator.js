@@ -123,7 +123,20 @@ const CypressGenerator = {
     
     // Assertions
     const assertions = [];
-    if (req.postmanScript) {
+    if (req.assertions && req.assertions.length > 0) {
+      lines.push(`${indent}  // Semantic Assertions`);
+      req.assertions.forEach(a => {
+        if (a.type === 'status') {
+          assertions.push(`expect(response.status).to.eq(${a.value});`);
+        } else if (a.type === 'responseTime') {
+          assertions.push(`expect(response.duration).to.be.below(${a.value});`);
+        } else if (a.type === 'header' && a.operator === 'contains') {
+          assertions.push(`expect(response.headers['${a.value.key.toLowerCase()}']).to.include('${a.value.val}');`);
+        } else {
+          assertions.push(`// Unmapped assertion: ${a.type}`);
+        }
+      });
+    } else if (req.postmanScript) {
       lines.push(`${indent}  // Postman Script Assertions`);
       this.extractCypressAssertions(req.postmanScript, assertions);
     }
