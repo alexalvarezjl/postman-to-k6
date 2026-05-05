@@ -223,9 +223,22 @@ const K6Generator = {
 
     // Checks
     const checks = [];
-    if (req.postmanScript) {
+    if (req.assertions && req.assertions.length > 0) {
+      req.assertions.forEach(a => {
+        if (a.type === 'status') {
+          checks.push({ name: a.name, expr: `(r) => r.status === ${a.value}` });
+        } else if (a.type === 'responseTime') {
+          checks.push({ name: a.name, expr: `(r) => r.timings.duration < ${a.value}` });
+        } else if (a.type === 'header' && a.operator === 'contains') {
+          checks.push({ name: a.name, expr: `(r) => r.headers['${a.value.key}'] && r.headers['${a.value.key}'].includes('${a.value.val}')` });
+        } else {
+          checks.push({ name: a.name, expr: `(r) => true /* Unmapped assertion: ${a.type} */` });
+        }
+      });
+    } else if (req.postmanScript) {
       this.extractK6Checks(req.postmanScript, checks);
     }
+    
     const allChecks = checks.length > 0
       ? checks
       : [{ name: 'Status es 200', expr: '(r) => r.status === 200' }];

@@ -8,8 +8,8 @@ Este documento detalla las mejoras técnicas identificadas para fortalecer la se
 
 - [ ] **Soporte de Playwright:** Siguiendo el mismo patrón de `generators/playwright-generator.js`, podrías añadir soporte para este framework en menos de una hora gracias al Intermediate Object Interface (IOI) que definimos.
 - [ ] **Manejo de Archivos en Form-Data:** Implementar la lógica para que Cypress o k6 puedan simular la subida de archivos si el Intermediate Object detecta campos de tipo `file`.
-- [ ] **Evolución del IOI:** Refinar el objeto intermedio para incluir metadatos de configuración de entorno y scripts de pre-solicitud.
-- [ ] **Mapeo de Aserciones Complejas:** Mejorar el traductor de `pm.expect` para manejar comparaciones profundas de objetos JSON, reduciendo la necesidad de revisión manual.
+- [x] **Evolución del IOI:** Refinar el objeto intermedio para incluir metadatos de configuración de entorno y scripts de pre-solicitud. *(Completado: IOI ahora incluye `preRequestScript` y `assertions`)*.
+- [x] **Mapeo de Aserciones Complejas:** Mejorar el traductor de `pm.expect` para manejar comparaciones profundas de objetos JSON, reduciendo la necesidad de revisión manual. *(Completado: Implementado Motor Semántico de Aserciones en el IOI)*.
 
 ---
 

@@ -146,14 +146,46 @@ const PostmanConverter = {
       }
     }
 
-    // ── Tests Script ──────────────────────────────────────────────
+    // ── Pre-request Script ──────────────────────────────────────────
+    let preRequestScript = '';
+    if (item.event) {
+      const preEvent = item.event.find(e => e.listen === 'prerequest');
+      if (preEvent && preEvent.script && preEvent.script.exec) {
+        preRequestScript = Array.isArray(preEvent.script.exec)
+          ? preEvent.script.exec.join('\n')
+          : preEvent.script.exec;
+      }
+    }
+
+    // ── Tests Script & Assertions ────────────────────────────────────
     let postmanScript = '';
+    const assertions = [];
     if (item.event) {
       const testEvent = item.event.find(e => e.listen === 'test');
       if (testEvent && testEvent.script && testEvent.script.exec) {
-        postmanScript = Array.isArray(testEvent.script.exec)
-          ? testEvent.script.exec.join('\n')
-          : testEvent.script.exec;
+        const lines = Array.isArray(testEvent.script.exec)
+          ? testEvent.script.exec
+          : testEvent.script.exec.split('\n');
+        
+        postmanScript = lines.join('\n');
+        
+        // Basic Semantic Extraction
+        lines.forEach(line => {
+          // Status code
+          const statusMatch = line.match(/pm\.response\.to\.have\.status\((\d+)\)/);
+          if (statusMatch) {
+            assertions.push({ name: `Status is ${statusMatch[1]}`, type: 'status', operator: 'eq', value: parseInt(statusMatch[1]), raw: line.trim() });
+          }
+          // Response time
+          const timeMatch = line.match(/responseTime\)\.to\.be\.below\((\d+)\)/);
+          if (timeMatch) {
+            assertions.push({ name: `Response time below ${timeMatch[1]}ms`, type: 'responseTime', operator: 'lt', value: parseInt(timeMatch[1]), raw: line.trim() });
+          }
+          // Content-Type
+          if (line.includes('json') && line.includes('Content-Type')) {
+            assertions.push({ name: 'Content-Type is JSON', type: 'header', operator: 'contains', value: { key: 'Content-Type', val: 'application/json' }, raw: line.trim() });
+          }
+        });
       }
     }
 
@@ -166,7 +198,9 @@ const PostmanConverter = {
       queryParams,
       headers,
       body,
+      preRequestScript,
       postmanScript,
+      assertions,
       selected: true
     };
   },

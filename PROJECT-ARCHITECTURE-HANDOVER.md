@@ -63,22 +63,24 @@ El archivo `converter.js` (Parser) actúa como el "Cerebro", transformando cualq
 ---
 
 ## 4. Lógica de Traducción de Aserciones
-El sistema traduce el lenguaje de Postman (`pm.expect`) a los frameworks destino mediante el análisis del `postmanScript`:
+El sistema ha evolucionado de usar expresiones regulares crudas en cada generador a un **Motor Semántico de Aserciones** en el Parser. `converter.js` procesa `postmanScript` y genera un arreglo de `assertions` independientes del framework.
 
-| Origen (Postman) | k6 (Check) | Cypress (Chai Expect) |
+Los generadores (k6, Cypress) consumen estos objetos y los mapean nativamente:
+
+| Origen (IOI Semántico) | k6 (Check) | Cypress (Chai Expect) |
 | :--- | :--- | :--- |
-| `status(200)` | `(r) => r.status === 200` | `expect(res.status).to.eq(200)` |
-| `below(500)` (Time) | `(r) => r.timings.duration < 500` | `expect(res.duration).to.be.below(500)` |
-| `to.be.json` | `(r) => r.headers['Content-Type'].includes('json')` | `expect(res.headers).to.include('application/json')` |
+| `type: 'status'` | `(r) => r.status === 200` | `expect(res.status).to.eq(200)` |
+| `type: 'responseTime'` | `(r) => r.timings.duration < 500` | `expect(res.duration).to.be.below(500)` |
+| `type: 'header' (Content-Type)` | `(r) => r.headers['Content-Type'].includes('json')` | `expect(res.headers['content-type']).to.include('json')` |
 
-*Nota: Las aserciones complejas de objetos JSON requieren revisión manual y se marcan con comentarios de advertencia en el código generado.*
+*Nota: Las aserciones complejas de objetos JSON que no pueden ser mapeadas al modelo semántico se mantienen en `postmanScript` para una evaluación "fallback" de los generadores o revisión manual.*
 
 ---
 
 ## 5. Pendientes y Escalabilidad
 
 ### Limitaciones Actuales
-- **Pre-request Scripts:** Actualmente no se procesan. Se recomienda mover la lógica de pre-request a comandos personalizados (Cypress) o a la función `setup()` (k6).
+- **Manejo Completo de Pre-request Scripts:** Aunque el parser ahora extrae el `preRequestScript` en el IOI, la inyección automática de variables dinámicas o configuración en `setup()` (k6) o `beforeEach()` (Cypress) aún está en fase de diseño por el agente `polyglot-architect`.
 - **Archivos Binary/Multipart:** Solo se exportan los metadatos de campos de texto en formdata; los archivos físicos no se incluyen por limitaciones del navegador.
 
 ### Cómo agregar un tercer framework (ej. Playwright)
