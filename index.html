@@ -24,9 +24,10 @@
         <span class="logo-icon">⚡</span>
         <span class="logo-text">Postman<span class="logo-accent"> → k6</span></span>
       </div>
-      <nav class="header-nav">
+      <nav class="header-nav" style="align-items: center;">
         <a href="#how-it-works" class="nav-link">¿Cómo funciona?</a>
         <a href="https://k6.io/docs/" target="_blank" rel="noopener noreferrer" class="nav-link" id="nav-docs">Docs k6 ↗</a>
+        <button id="btn-reset-header" class="btn btn-outline btn-sm hidden">🔄 Nueva conversión</button>
       </nav>
     </div>
   </header>
@@ -107,10 +108,13 @@
           ></textarea>
           <div class="paste-actions">
             <span id="json-status" class="json-status"></span>
-            <button id="btn-parse" class="btn btn-primary">
-              <span>Analizar colección</span>
-              <span class="btn-icon">→</span>
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-clear-json" class="btn btn-ghost" type="button">Limpiar</button>
+              <button id="btn-parse" class="btn btn-primary">
+                <span>Analizar colección</span>
+                <span class="btn-icon">→</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -131,10 +135,13 @@
           ></textarea>
           <div class="paste-actions">
             <span id="curl-status" class="json-status"></span>
-            <button id="btn-parse-curl" class="btn btn-primary">
-              <span>Convertir cURL</span>
-              <span class="btn-icon">→</span>
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-clear-curl" class="btn btn-ghost" type="button">Limpiar</button>
+              <button id="btn-parse-curl" class="btn btn-primary">
+                <span>Convertir cURL</span>
+                <span class="btn-icon">→</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -422,6 +429,24 @@
           </div>
         </div>
 
+        <!-- Opciones de Cypress -->
+        <div class="config-section config-section--full hidden" id="cypress-config-section">
+          <label class="config-label">Opciones de Cypress</label>
+          <div class="k6-modules-grid">
+            <div class="module-card">
+              <div class="module-header">
+                <input type="checkbox" id="cfg-cypress-ts" class="threshold-check" />
+                <label for="cfg-cypress-ts" class="module-title">
+                  Generar en TypeScript (TS)
+                </label>
+              </div>
+              <div class="module-body">
+                <p class="config-hint">Genera la suite de Cypress utilizando archivos <code>.ts</code> con tipado básico y referencias globales.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="step-footer">
@@ -441,8 +466,9 @@
           <p class="step-desc">Tu script k6 listo para ejecutar</p>
         </div>
         <div class="step-actions">
+          <button id="btn-reset" class="btn btn-outline btn-sm">🔄 Nueva conversión</button>
           <button id="btn-copy" class="btn btn-ghost btn-sm">📋 Copiar</button>
-          <button id="btn-download" class="btn btn-primary btn-sm">⬇️ Descargar .js</button>
+          <button id="btn-download" class="btn btn-primary btn-sm">⬇️ Descargar</button>
           <button id="btn-download-per-request" class="btn btn-secondary btn-sm">📦 1 archivo por request</button>
         </div>
       </div>
