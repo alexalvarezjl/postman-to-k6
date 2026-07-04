@@ -13,6 +13,10 @@ const CypressGenerator = {
     if (selectedRequests.length === 0) throw new Error('No hay requests seleccionadas.');
 
     const lines = [];
+    if (config && config.useTypescript) {
+      lines.push('/// <reference types="cypress" />');
+      lines.push('');
+    }
     lines.push('/**');
     lines.push(` * Cypress API Test: ${collection.name || 'Postman Collection'}`);
     lines.push(` * Generated on: ${new Date().toLocaleString()}`);
@@ -46,26 +50,31 @@ const CypressGenerator = {
     return lines.join('\n');
   },
 
-  /**
-   * Generates a zip-ready structure for the entire collection.
-   */
   generateCypressProject(collection, config) {
     const files = [];
     const selectedRequests = collection.requests.filter(r => r.selected);
+    const isTS = !!(config && config.useTypescript);
+    const ext = isTS ? 'ts' : 'js';
     
-    // 1. cypress.config.js
+    // 1. cypress.config
     files.push({
-      filename: 'cypress.config.js',
+      filename: `cypress.config.${ext}`,
       content: this.generateConfig(config)
     });
 
-    // 2. cypress/support/commands.js
+    // 2. cypress/support/e2e
     files.push({
-      filename: 'cypress/support/commands.js',
+      filename: `cypress/support/e2e.${ext}`,
+      content: `// Import commands.${ext} using ES2015 syntax:\nimport './commands';\n`
+    });
+
+    // 3. cypress/support/commands
+    files.push({
+      filename: `cypress/support/commands.${ext}`,
       content: this.generateCommands(collection, config)
     });
 
-    // 3. cypress/e2e/ specs
+    // 4. cypress/e2e/ specs
     const grouped = PostmanConverter.groupByFolder(selectedRequests);
     for (const [folder, reqs] of grouped) {
       const slug = (folder || 'api')
@@ -79,7 +88,7 @@ const CypressGenerator = {
       }, config);
 
       files.push({
-        filename: `cypress/e2e/${slug}.cy.js`,
+        filename: `cypress/e2e/${slug}.cy.${ext}`,
         content: specContent
       });
     }
@@ -252,6 +261,24 @@ const CypressGenerator = {
   },
 
   generateConfig(config) {
+    const isTS = !!(config && config.useTypescript);
+    if (isTS) {
+      return `import { defineConfig } from "cypress";
+
+export default defineConfig({
+  e2e: {
+    baseUrl: "${config.baseUrl || ''}",
+    setupNodeEvents(on, config) {
+      // implement node event listeners here
+    },
+    supportFile: "cypress/support/e2e.ts",
+    specPattern: "cypress/e2e/**/*.cy.ts"
+  },
+  env: {
+    // Add your Postman variables here
+  }
+});`;
+    }
     return `const { defineConfig } = require("cypress");
 
 module.exports = defineConfig({
@@ -270,6 +297,40 @@ module.exports = defineConfig({
   },
 
   generateCommands(collection, config) {
+    const isTS = !!(config && config.useTypescript);
+    if (isTS) {
+      return `/**
+ * Custom commands for API testing
+ */
+
+declare global {
+  namespace Cypress {
+    interface Chainable {
+      /**
+       * Command for abstracted authentication
+       */
+      login(role?: string): Chainable<any>;
+    }
+  }
+}
+
+// Command for abstracted authentication
+Cypress.Commands.add('login', (role: string = 'default') => {
+  cy.log(\`Logging in as \${role}...\`);
+  // This is a template based on Postman auth patterns
+  // Replace with your actual login request
+  /*
+  cy.request('POST', '/auth/login', { role }).then((res) => {
+    Cypress.env('token', res.body.token);
+  });
+  */
+});
+
+// Helper for dynamic tokens if detected in Postman
+if (Cypress.env('bearerToken')) {
+  // Logic to handle token refresh could go here
+}`;
+    }
     return `/**
  * Custom commands for API testing
  */

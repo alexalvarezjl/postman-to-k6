@@ -12,25 +12,11 @@
       "sourceType": "github",
       "computedHash": "848fa4f55878404e6eabe115f8b255c65dc812a570bca5396a78aaf84cc2a906"
     },
-    "openspec-apply-change": {
-      "source": "forztf/open-skilled-sdd",
+    "tdd": {
+      "source": "mattpocock/skills",
       "sourceType": "github",
-      "skillPath": "skills/openspec-apply-change/SKILL.md"
-    },
-    "openspec-archive-change": {
-      "source": "forztf/open-skilled-sdd",
-      "sourceType": "github",
-      "skillPath": "skills/openspec-archive-change/SKILL.md"
-    },
-    "openspec-explore": {
-      "source": "forztf/open-skilled-sdd",
-      "sourceType": "github",
-      "skillPath": "skills/openspec-explore/SKILL.md"
-    },
-    "openspec-propose": {
-      "source": "forztf/open-skilled-sdd",
-      "sourceType": "github",
-      "skillPath": "skills/openspec-propose/SKILL.md"
+      "skillPath": "skills/engineering/tdd/SKILL.md",
+      "computedHash": "c9326b88419cfba1d54dd713b7ddb23020e6a93f4b0d13aea58cebba58cda2ee"
     },
     "writing-plans": {
       "source": "obra/superpowers",

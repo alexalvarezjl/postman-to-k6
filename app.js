@@ -61,6 +61,8 @@ const DOM = {
   btnCopy:     $('btn-copy'),
   btnDownload: $('btn-download'),
   btnDownloadPerRequest: $('btn-download-per-request'),
+  btnReset:    $('btn-reset'),
+  btnResetHeader: $('btn-reset-header'),
   codeLang:    $('code-lang'),
   codeContent: $('code-content'),
   codeLines:   $('code-lines'),
@@ -76,6 +78,7 @@ const DOM = {
   cfgOnBehalfOf:  $('cfg-on-behalf-of'),
   cfgUseSummary:  $('cfg-use-summary'),
   cfgReportPath:  $('cfg-report-path'),
+  cfgCypressTs:   $('cfg-cypress-ts'),
 
   // Input mode tabs + panels
   tabPostman:    $('tab-postman'),
@@ -85,6 +88,8 @@ const DOM = {
   curlInput:     $('curl-input'),
   curlStatus:    $('curl-status'),
   btnParseCurl:  $('btn-parse-curl'),
+  btnClearJson:  $('btn-clear-json'),
+  btnClearCurl:  $('btn-clear-curl'),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,6 +124,11 @@ DOM.targetBtns.forEach(btn => {
 
     k6Panels.forEach(p => p.classList.toggle('hidden', !isK6));
 
+    // Hide/Show Cypress-specific panels
+    if ($('cypress-config-section')) {
+      $('cypress-config-section').classList.toggle('hidden', isK6);
+    }
+
     // Update generate button text
     DOM.btnGenerate.innerHTML = isK6 
       ? '<span class="btn-icon">⚡</span> Generar script k6'
@@ -131,8 +141,9 @@ DOM.targetBtns.forEach(btn => {
       : 'Tus archivos de Cypress listos para tu proyecto';
 
     // Update language label
+    const isTS = !isK6 && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
     if (DOM.codeLang) {
-      DOM.codeLang.textContent = isK6 ? 'javascript · k6' : 'javascript · cypress';
+      DOM.codeLang.textContent = isK6 ? 'javascript · k6' : (isTS ? 'typescript · cypress' : 'javascript · cypress');
     }
 
     // Update run instructions visibility
@@ -148,9 +159,23 @@ DOM.targetBtns.forEach(btn => {
       navDocs.href = isK6 ? 'https://k6.io/docs/' : 'https://docs.cypress.io/';
     }
     
-    state.scriptFilename = isK6 ? 'load-test.js' : 'cypress-test.cy.js';
+    state.scriptFilename = isK6 ? 'load-test.js' : (isTS ? 'cypress-test.cy.ts' : 'cypress-test.cy.js');
   });
 });
+
+if (DOM.cfgCypressTs) {
+  DOM.cfgCypressTs.addEventListener('change', () => {
+    if (state.targetFramework === 'cypress') {
+      const isTS = DOM.cfgCypressTs.checked;
+      if (DOM.codeLang) {
+        DOM.codeLang.textContent = isTS ? 'typescript · cypress' : 'javascript · cypress';
+      }
+      state.scriptFilename = isTS 
+        ? state.scriptFilename.replace(/\.js$/, '.ts') 
+        : state.scriptFilename.replace(/\.ts$/, '.js');
+    }
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODULE TOGGLES
@@ -214,6 +239,10 @@ function activateStep(n) {
     else if (i + 1 === n) el.classList.add('active'), el.textContent = i + 1;
     else el.textContent = i + 1;
   });
+
+  if (DOM.btnResetHeader) {
+    DOM.btnResetHeader.classList.toggle('hidden', n === 1);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -299,15 +328,16 @@ function parseCollection() {
     json.variable.forEach(v => variables.push({ key: v.key, value: v.value }));
   }
 
+  const isTS = state.targetFramework === 'cypress' && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
   state.collection = {
-    name: json.info.name || 'Mi Colecci\u00f3n',
+    name: json.info.name || 'Mi Colección',
     requests,
     variables,
     folderCount: folders.size
   };
   state.scriptFilename = state.targetFramework === 'k6' 
     ? `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'load'}-test.js`
-    : `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'api'}-test.cy.js`;
+    : `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'api'}-test.cy.${isTS ? 'ts' : 'js'}`;
 
   // Update step 2 headings for Postman mode
   const s2title = $('step2-title');
@@ -449,7 +479,8 @@ function parseCurlCommand() {
     folderCount: 0
   };
   const slug = req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
-  state.scriptFilename = state.targetFramework === 'k6' ? `${slug}-test.js` : `${slug}-test.cy.js`;
+  const isTS = state.targetFramework === 'cypress' && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
+  state.scriptFilename = state.targetFramework === 'k6' ? `${slug}-test.js` : `${slug}-test.cy.${isTS ? 'ts' : 'js'}`;
 
   const s2title = $('step2-title');
   const s2desc  = $('step2-desc');
@@ -559,6 +590,7 @@ function readConfig() {
     onBehalfOf:      DOM.cfgOnBehalfOf.value.trim(),
     useHandleSummary: DOM.cfgUseSummary.checked,
     reportPath:      DOM.cfgReportPath.value.trim(),
+    useTypescript:   DOM.cfgCypressTs ? DOM.cfgCypressTs.checked : false
   };
 
   if (mode === 'simple') {
@@ -614,8 +646,17 @@ DOM.btnGenerate.addEventListener('click', () => {
     let script = '';
     if (target === 'k6') {
       script = window.K6Generator.generateK6Script(state.collection, config);
+      state.scriptFilename = state.scriptFilename.replace(/\.ts$/, '.js');
+      if (DOM.codeLang) DOM.codeLang.textContent = 'javascript · k6';
     } else {
       script = window.CypressGenerator.generateCypressScript(state.collection, config);
+      if (config.useTypescript) {
+        state.scriptFilename = state.scriptFilename.replace(/\.js$/, '.ts');
+        if (DOM.codeLang) DOM.codeLang.textContent = 'typescript · cypress';
+      } else {
+        state.scriptFilename = state.scriptFilename.replace(/\.ts$/, '.js');
+        if (DOM.codeLang) DOM.codeLang.textContent = 'javascript · cypress';
+      }
     }
 
     state.generatedScript = script;
@@ -645,7 +686,8 @@ DOM.btnCopy.addEventListener('click', () => {
 
 DOM.btnDownload.addEventListener('click', () => {
   if (!state.generatedScript) return;
-  const blob = new Blob([state.generatedScript], { type: 'application/javascript' });
+  const isTS = state.scriptFilename.endsWith('.ts');
+  const blob = new Blob([state.generatedScript], { type: isTS ? 'text/typescript' : 'application/javascript' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -714,6 +756,72 @@ function showToast(msg, type = 'success') {
     toast.style.transition = 'opacity 0.3s';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESET APP / SLATE CLEARING
+// ─────────────────────────────────────────────────────────────────────────────
+function resetApp() {
+  state.collection = null;
+  state.generatedScript = '';
+  state.scriptFilename = state.targetFramework === 'k6' ? 'load-test.js' : 'cypress-test.cy.js';
+
+  // Reset inputs
+  DOM.fileInput.value = '';
+  DOM.jsonInput.value = '';
+  DOM.curlInput.value = '';
+
+  // Reset status indicators
+  DOM.jsonStatus.textContent = '';
+  DOM.jsonStatus.className = 'json-status';
+  DOM.curlStatus.textContent = '';
+  DOM.curlStatus.className = 'json-status';
+
+  // Reset step 2 preview
+  DOM.requestsList.innerHTML = `
+    <div class="empty-state">
+      <span class="empty-icon">🔍</span>
+      <p>Importa una colección para ver las requests</p>
+    </div>
+  `;
+  DOM.collSummary.classList.add('hidden');
+  DOM.previewActions.classList.add('hidden');
+
+  // Remove Step 2 continue button
+  step3BtnAdded = false;
+  const oldBtn = DOM.stepPreview.querySelector('.btn.btn-primary');
+  if (oldBtn) oldBtn.remove();
+
+  // Reset Step 4 code contents
+  DOM.codeContent.textContent = '';
+  DOM.codeLines.textContent = '';
+
+  // Go back to Step 1
+  activateStep(1);
+  scrollToEl(DOM.stepImport);
+  showToast('Pantalla reiniciada. Listo para una nueva request.');
+}
+
+if (DOM.btnReset) DOM.btnReset.addEventListener('click', resetApp);
+if (DOM.btnResetHeader) DOM.btnResetHeader.addEventListener('click', resetApp);
+
+if (DOM.btnClearJson) {
+  DOM.btnClearJson.addEventListener('click', () => {
+    DOM.jsonInput.value = '';
+    DOM.fileInput.value = '';
+    DOM.jsonStatus.textContent = '';
+    DOM.jsonStatus.className = 'json-status';
+    showToast('Campo de colección limpiado.');
+  });
+}
+
+if (DOM.btnClearCurl) {
+  DOM.btnClearCurl.addEventListener('click', () => {
+    DOM.curlInput.value = '';
+    DOM.curlStatus.textContent = '';
+    DOM.curlStatus.className = 'json-status';
+    showToast('Campo de cURL limpiado.');
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
