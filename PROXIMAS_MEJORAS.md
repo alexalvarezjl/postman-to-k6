@@ -17,7 +17,7 @@ Este documento detalla las mejoras técnicas identificadas para fortalecer la se
 
 - [ ] **Pre-request Scripts Avanzados:** Implementar la conversión de lógica de pre-solicitud hacia la función `setup()` en k6 y comandos personalizados en Cypress.
 - [ ] **Variables Dinámicas Globales:** Mapear variables dinámicas de Postman (ej: `{{$guid}}`, `{{$timestamp}}`) a sus equivalentes nativos en todos los frameworks soportados.
-- [ ] **Soporte UTF-8 en Auth:** Corregir la limitación de `btoa` en credenciales de Basic Auth para soportar caracteres especiales (Unicode/UTF-8).
+- [x] **Soporte UTF-8 en Auth:** Corregir la limitación de `btoa` en credenciales de Basic Auth para soportar caracteres especiales (Unicode/UTF-8). *(Completado: Implementado método `safeBtoa` con `TextEncoder`)*.
 - [ ] **Validación de Esquema Postman:** Implementar una validación estricta del JSON de entrada usando el esquema oficial de Postman Collection v2.x.
 
 ---
@@ -40,7 +40,7 @@ Este documento detalla las mejoras técnicas identificadas para fortalecer la se
 
 ## 🎨 UI / UX
 
-- [ ] **Local Storage Persistence:** Guardar la preferencia de framework del usuario en el navegador para que, al recargar, la SPA recuerde si prefiere k6 o Cypress.
-- [ ] **Dark Mode Sync:** Sincronizar el tema con las preferencias del sistema del usuario.
+- [x] **Local Storage Persistence:** Guardar la preferencia de framework del usuario en el navegador para que, al recargar, la SPA recuerde si prefiere k6 o Cypress. *(Completado)*.
+- [x] **Dark Mode Sync:** Sincronizar el tema con las preferencias del sistema del usuario. *(Completado vía media query `@media (prefers-color-scheme)`)*.
 - [ ] **Editor de Código en Vivo:** Permitir ediciones manuales rápidas en el script generado antes de la descarga definitiva.
 - [ ] **Drag & Drop de Carpetas:** Permitir arrastrar carpetas enteras de archivos `.json` para procesamiento masivo.

@@ -915,3 +915,84 @@ body {
   .request-url { display: none; }
   .collection-summary { flex-wrap: wrap; gap: 16px; }
 }
+
+/* ============================================================
+   DARK MODE SYNC (LIGHT THEME SUPPORT)
+   ============================================================ */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-active: rgba(79, 142, 247, 0.6);
+
+    --accent: #2563eb;
+    --accent-2: #7c3aed;
+    --accent-3: #059669;
+    --accent-glow: rgba(37, 99, 235, 0.15);
+
+    --text: #0f172a;
+    --text-muted: #475569;
+    --text-dim: #94a3b8;
+
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 8px 48px rgba(0, 0, 0, 0.1);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .header {
+    background: rgba(248, 250, 252, 0.8) !important;
+  }
+
+  .logo-icon {
+    filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.3));
+  }
+
+  /* Input fields, textareas, and code containers */
+  .json-textarea,
+  .config-input,
+  .threshold-input,
+  .run-code,
+  .code-toolbar,
+  .code-block {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: var(--text) !important;
+  }
+
+  .run-code {
+    color: #047857 !important;
+  }
+
+  /* Light theme syntax highlighting overrides */
+  .kw { color: #a626a4 !important; } /* purple */
+  .fn { color: #4078f2 !important; } /* blue */
+  .str { color: #50a14f !important; } /* green */
+  .num { color: #98680f !important; } /* orange/brown */
+  .cmt { color: #a0a1a7 !important; } /* gray */
+  .obj { color: #e45649 !important; } /* red */
+
+  /* Button/badge visibility overrides */
+  .btn-secondary {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .empty-state {
+    color: var(--text-muted);
+  }
+
+  .toast {
+    background: rgba(15, 23, 42, 0.95);
+    color: #ffffff;
+  }
+}
+

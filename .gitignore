@@ -1,0 +1,15 @@
+# Local editor settings
+.vscode/
+
+# IDE / OS junk
+.DS_Store
+Thumbs.db
+
+# Agent files
+.agent/
+.agents
+.claude/
+.gemini/
+
+# Dependency directories
+node_modules/

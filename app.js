@@ -101,6 +101,7 @@ DOM.targetBtns.forEach(btn => {
     if (target === state.targetFramework) return;
 
     state.targetFramework = target;
+    localStorage.setItem('targetFramework', target);
     
     // Update active UI state
     DOM.targetBtns.forEach(b => b.classList.toggle('active', b.dataset.target === target));
@@ -827,4 +828,12 @@ if (DOM.btnClearCurl) {
 // ─────────────────────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────────────────────
+const savedFramework = localStorage.getItem('targetFramework');
+if (savedFramework && (savedFramework === 'k6' || savedFramework === 'cypress')) {
+  const btn = Array.from(DOM.targetBtns).find(b => b.dataset.target === savedFramework);
+  if (btn) {
+    btn.click();
+  }
+}
+
 activateStep(1);
