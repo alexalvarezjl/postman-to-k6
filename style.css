@@ -103,7 +103,7 @@ body {
 }
 .logo-icon { font-size: 1.4rem; }
 .logo-accent { color: var(--accent); }
-.header-nav { display: flex; gap: 24px; }
+.header-nav { display: flex; align-items: center; gap: 24px; }
 .nav-link {
   color: var(--text-muted);
   text-decoration: none;
@@ -367,6 +367,11 @@ body {
 }
 .json-status.ok { color: var(--accent-3); }
 .json-status.err { color: #f87171; }
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
 
 /* ============================================================
    REQUESTS LIST

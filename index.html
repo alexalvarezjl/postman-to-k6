@@ -25,7 +25,7 @@
         <span class="logo-icon">⚡</span>
         <span class="logo-text">Postman<span class="logo-accent"> → k6</span></span>
       </div>
-      <nav class="header-nav" style="align-items: center;">
+      <nav class="header-nav">
         <a href="#how-it-works" class="nav-link">¿Cómo funciona?</a>
         <a href="https://k6.io/docs/" target="_blank" rel="noopener noreferrer" class="nav-link" id="nav-docs">Docs k6 ↗</a>
         <button id="btn-reset-header" class="btn btn-outline btn-sm hidden">🔄 Nueva conversión</button>
@@ -112,7 +112,7 @@
           ></textarea>
           <div class="paste-actions">
             <span id="json-status" class="json-status"></span>
-            <div style="display: flex; gap: 8px;">
+            <div class="btn-group">
               <button id="btn-clear-json" class="btn btn-ghost" type="button">Limpiar</button>
               <button id="btn-parse" class="btn btn-primary">
                 <span>Analizar colección</span>
@@ -139,7 +139,7 @@
           ></textarea>
           <div class="paste-actions">
             <span id="curl-status" class="json-status"></span>
-            <div style="display: flex; gap: 8px;">
+            <div class="btn-group">
               <button id="btn-clear-curl" class="btn btn-ghost" type="button">Limpiar</button>
               <button id="btn-parse-curl" class="btn btn-primary">
                 <span>Convertir cURL</span>
