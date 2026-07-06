@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'none'; object-src 'none'; frame-ancestors 'none';" />
   <title>Postman → k6 Converter | Load Testing Generator</title>
   <meta name="description" content="Convierte colecciones de Postman a scripts de k6 para load testing y performance testing en segundos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,7 +25,7 @@
         <span class="logo-icon">⚡</span>
         <span class="logo-text">Postman<span class="logo-accent"> → k6</span></span>
       </div>
-      <nav class="header-nav" style="align-items: center;">
+      <nav class="header-nav">
         <a href="#how-it-works" class="nav-link">¿Cómo funciona?</a>
         <a href="https://k6.io/docs/" target="_blank" rel="noopener noreferrer" class="nav-link" id="nav-docs">Docs k6 ↗</a>
         <button id="btn-reset-header" class="btn btn-outline btn-sm hidden">🔄 Nueva conversión</button>
@@ -56,6 +57,9 @@
       </button>
       <button class="target-btn" data-target="cypress">
         <span class="target-icon">🌲</span> Cypress
+      </button>
+      <button class="target-btn" data-target="playwright">
+        <span class="target-icon">🎭</span> Playwright
       </button>
     </div>
   </div>
@@ -108,7 +112,7 @@
           ></textarea>
           <div class="paste-actions">
             <span id="json-status" class="json-status"></span>
-            <div style="display: flex; gap: 8px;">
+            <div class="btn-group">
               <button id="btn-clear-json" class="btn btn-ghost" type="button">Limpiar</button>
               <button id="btn-parse" class="btn btn-primary">
                 <span>Analizar colección</span>
@@ -135,7 +139,7 @@
           ></textarea>
           <div class="paste-actions">
             <span id="curl-status" class="json-status"></span>
-            <div style="display: flex; gap: 8px;">
+            <div class="btn-group">
               <button id="btn-clear-curl" class="btn btn-ghost" type="button">Limpiar</button>
               <button id="btn-parse-curl" class="btn btn-primary">
                 <span>Convertir cURL</span>
@@ -429,9 +433,8 @@
           </div>
         </div>
 
-        <!-- Opciones de Cypress -->
         <div class="config-section config-section--full hidden" id="cypress-config-section">
-          <label class="config-label">Opciones de Cypress</label>
+          <label class="config-label">Opciones de Cypress / Playwright</label>
           <div class="k6-modules-grid">
             <div class="module-card">
               <div class="module-header">
@@ -441,7 +444,7 @@
                 </label>
               </div>
               <div class="module-body">
-                <p class="config-hint">Genera la suite de Cypress utilizando archivos <code>.ts</code> con tipado básico y referencias globales.</p>
+                <p class="config-hint">Genera la suite utilizando archivos <code>.ts</code> con tipado básico.</p>
               </div>
             </div>
           </div>
@@ -530,6 +533,30 @@
             </div>
           </div>
         </div>
+
+        <div class="run-steps hidden" id="run-steps-playwright">
+          <div class="run-step">
+            <span class="run-num">1</span>
+            <div>
+              <p class="run-step-title">Instalar Playwright</p>
+              <code class="run-code">npm init playwright@latest</code>
+            </div>
+          </div>
+          <div class="run-step">
+            <span class="run-num">2</span>
+            <div>
+              <p class="run-step-title">Ejecutar pruebas</p>
+              <code class="run-code">npx playwright test</code>
+            </div>
+          </div>
+          <div class="run-step">
+            <span class="run-num">3</span>
+            <div>
+              <p class="run-step-title">Ver reporte HTML</p>
+              <code class="run-code">npx playwright show-report</code>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -572,6 +599,7 @@
   <script src="curl-parser.js"></script>
   <script src="generators/k6-generator.js"></script>
   <script src="generators/cypress-generator.js"></script>
+  <script src="generators/playwright-generator.js"></script>
   <script src="converter.js"></script>
   <script src="app.js"></script>
 </body>
