@@ -69,6 +69,7 @@ const DOM = {
   runCmd:      $('run-cmd'),
   runStepsK6:  $('run-steps-k6'),
   runStepsCy:  $('run-steps-cypress'),
+  runStepsPw:  $('run-steps-playwright'),
 
   // k6 modules
   cfgUseSetup:    $('cfg-use-setup'),
@@ -108,10 +109,10 @@ DOM.targetBtns.forEach(btn => {
     
     // Update Step 3 Visibility
     const isK6 = target === 'k6';
-    $('step-config').querySelector('.step-title').textContent = isK6 ? 'Configurar k6' : 'Configurar Cypress';
+    $('step-config').querySelector('.step-title').textContent = isK6 ? 'Configurar k6' : (target === 'cypress' ? 'Configurar Cypress' : 'Configurar Playwright');
     $('step-config').querySelector('.step-desc').textContent = isK6 
       ? 'Define las opciones de carga para tu prueba'
-      : 'Configura las opciones de tu suite de Cypress';
+      : (target === 'cypress' ? 'Configura las opciones de tu suite de Cypress' : 'Configura las opciones de tu suite de Playwright');
 
     // Hide/Show K6-specific panels
     const k6Panels = [
@@ -125,7 +126,7 @@ DOM.targetBtns.forEach(btn => {
 
     k6Panels.forEach(p => p.classList.toggle('hidden', !isK6));
 
-    // Hide/Show Cypress-specific panels
+    // Hide/Show Cypress/Playwright panels
     if ($('cypress-config-section')) {
       $('cypress-config-section').classList.toggle('hidden', isK6);
     }
@@ -133,34 +134,49 @@ DOM.targetBtns.forEach(btn => {
     // Update generate button text
     DOM.btnGenerate.innerHTML = isK6 
       ? '<span class="btn-icon">⚡</span> Generar script k6'
-      : '<span class="btn-icon">🌲</span> Generar suite Cypress';
+      : (target === 'cypress' 
+          ? '<span class="btn-icon">🌲</span> Generar suite Cypress'
+          : '<span class="btn-icon">🎭</span> Generar suite Playwright');
 
     // Update Result step text
     $('step-result').querySelector('.step-title').textContent = isK6 ? 'Script generado' : 'Suite generada';
     $('step-result').querySelector('.step-desc').textContent = isK6 
       ? 'Tu script k6 listo para ejecutar'
-      : 'Tus archivos de Cypress listos para tu proyecto';
+      : (target === 'cypress'
+          ? 'Tus archivos de Cypress listos para tu proyecto'
+          : 'Tus archivos de Playwright listos para tu proyecto');
 
     // Update language label
     const isTS = !isK6 && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
     if (DOM.codeLang) {
-      DOM.codeLang.textContent = isK6 ? 'javascript · k6' : (isTS ? 'typescript · cypress' : 'javascript · cypress');
+      DOM.codeLang.textContent = isK6 
+        ? 'javascript · k6' 
+        : (target === 'cypress'
+            ? (isTS ? 'typescript · cypress' : 'javascript · cypress')
+            : (isTS ? 'typescript · playwright' : 'javascript · playwright'));
     }
 
     // Update run instructions visibility
-    if (DOM.runStepsK6 && DOM.runStepsCy) {
-      DOM.runStepsK6.classList.toggle('hidden', !isK6);
-      DOM.runStepsCy.classList.toggle('hidden', isK6);
+    if (DOM.runStepsK6 && DOM.runStepsCy && DOM.runStepsPw) {
+      DOM.runStepsK6.classList.toggle('hidden', target !== 'k6');
+      DOM.runStepsCy.classList.toggle('hidden', target !== 'cypress');
+      DOM.runStepsPw.classList.toggle('hidden', target !== 'playwright');
     }
     
     // Update Docs link
     const navDocs = $('nav-docs');
     if (navDocs) {
-      navDocs.textContent = isK6 ? 'Docs k6 \u2197' : 'Docs Cypress \u2197';
-      navDocs.href = isK6 ? 'https://k6.io/docs/' : 'https://docs.cypress.io/';
+      navDocs.textContent = target === 'k6' ? 'Docs k6 \u2197' : (target === 'cypress' ? 'Docs Cypress \u2197' : 'Docs Playwright \u2197');
+      navDocs.href = target === 'k6' 
+        ? 'https://k6.io/docs/' 
+        : (target === 'cypress' ? 'https://docs.cypress.io/' : 'https://playwright.dev/');
     }
     
-    state.scriptFilename = isK6 ? 'load-test.js' : (isTS ? 'cypress-test.cy.ts' : 'cypress-test.cy.js');
+    state.scriptFilename = target === 'k6' 
+      ? 'load-test.js' 
+      : (target === 'cypress'
+          ? (isTS ? 'cypress-test.cy.ts' : 'cypress-test.cy.js')
+          : (isTS ? 'playwright-test.spec.ts' : 'playwright-test.spec.js'));
   });
 });
 
@@ -329,16 +345,19 @@ function parseCollection() {
     json.variable.forEach(v => variables.push({ key: v.key, value: v.value }));
   }
 
-  const isTS = state.targetFramework === 'cypress' && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
+  const isTS = (state.targetFramework === 'cypress' || state.targetFramework === 'playwright') && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
   state.collection = {
     name: json.info.name || 'Mi Colección',
     requests,
     variables,
     folderCount: folders.size
   };
+  const baseName = json.info.name?.replace(/\s+/g, '-').toLowerCase();
   state.scriptFilename = state.targetFramework === 'k6' 
-    ? `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'load'}-test.js`
-    : `${json.info.name?.replace(/\s+/g, '-').toLowerCase() || 'api'}-test.cy.${isTS ? 'ts' : 'js'}`;
+    ? `${baseName || 'load'}-test.js`
+    : (state.targetFramework === 'cypress'
+        ? `${baseName || 'api'}-test.cy.${isTS ? 'ts' : 'js'}`
+        : `${baseName || 'api'}-test.spec.${isTS ? 'ts' : 'js'}`);
 
   // Update step 2 headings for Postman mode
   const s2title = $('step2-title');
@@ -480,8 +499,12 @@ function parseCurlCommand() {
     folderCount: 0
   };
   const slug = req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
-  const isTS = state.targetFramework === 'cypress' && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
-  state.scriptFilename = state.targetFramework === 'k6' ? `${slug}-test.js` : `${slug}-test.cy.${isTS ? 'ts' : 'js'}`;
+  const isTS = (state.targetFramework === 'cypress' || state.targetFramework === 'playwright') && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
+  state.scriptFilename = state.targetFramework === 'k6' 
+    ? `${slug}-test.js` 
+    : (state.targetFramework === 'cypress' 
+        ? `${slug}-test.cy.${isTS ? 'ts' : 'js'}`
+        : `${slug}-test.spec.${isTS ? 'ts' : 'js'}`);
 
   const s2title = $('step2-title');
   const s2desc  = $('step2-desc');
@@ -649,7 +672,7 @@ DOM.btnGenerate.addEventListener('click', () => {
       script = window.K6Generator.generateK6Script(state.collection, config);
       state.scriptFilename = state.scriptFilename.replace(/\.ts$/, '.js');
       if (DOM.codeLang) DOM.codeLang.textContent = 'javascript · k6';
-    } else {
+    } else if (target === 'cypress') {
       script = window.CypressGenerator.generateCypressScript(state.collection, config);
       if (config.useTypescript) {
         state.scriptFilename = state.scriptFilename.replace(/\.js$/, '.ts');
@@ -657,6 +680,15 @@ DOM.btnGenerate.addEventListener('click', () => {
       } else {
         state.scriptFilename = state.scriptFilename.replace(/\.ts$/, '.js');
         if (DOM.codeLang) DOM.codeLang.textContent = 'javascript · cypress';
+      }
+    } else if (target === 'playwright') {
+      script = window.PlaywrightGenerator.generatePlaywrightScript(state.collection, config);
+      if (config.useTypescript) {
+        state.scriptFilename = state.scriptFilename.replace(/\.js$/, '.ts');
+        if (DOM.codeLang) DOM.codeLang.textContent = 'typescript · playwright';
+      } else {
+        state.scriptFilename = state.scriptFilename.replace(/\.ts$/, '.js');
+        if (DOM.codeLang) DOM.codeLang.textContent = 'javascript · playwright';
       }
     }
 
@@ -707,8 +739,11 @@ DOM.btnDownloadPerRequest.addEventListener('click', async () => {
     if (target === 'k6') {
       const scripts = PostmanConverter.generateK6ScriptsPerRequest(state.collection, config);
       scripts.forEach(s => zip.file(s.filename, s.content));
-    } else {
+    } else if (target === 'cypress') {
       const files = window.CypressGenerator.generateCypressProject(state.collection, config);
+      files.forEach(f => zip.file(f.filename, f.content));
+    } else if (target === 'playwright') {
+      const files = window.PlaywrightGenerator.generatePlaywrightProject(state.collection, config);
       files.forEach(f => zip.file(f.filename, f.content));
     }
 
@@ -716,7 +751,7 @@ DOM.btnDownloadPerRequest.addEventListener('click', async () => {
     const url = URL.createObjectURL(content);
     const a = document.createElement('a');
     a.href = url;
-    a.download = target === 'k6' ? 'k6-scripts.zip' : 'cypress-project.zip';
+    a.download = target === 'k6' ? 'k6-scripts.zip' : (target === 'cypress' ? 'cypress-project.zip' : 'playwright-project.zip');
     a.click();
     URL.revokeObjectURL(url);
     showToast('Archivo .zip generado');

@@ -165,8 +165,18 @@ const CypressGenerator = {
    */
   resolveCypressVars(str) {
     if (!str) return '';
-    // Replace {{var}} with ${Cypress.env('var')}
-    return str.replace(/\{\{(\w+)\}\}/g, (_, name) => `\${Cypress.env('${name}')}`);
+    return str.replace(/\{\{([$\w]+)\}\}/g, (_, name) => {
+      if (name === '$guid') {
+        return '${crypto.randomUUID()}';
+      }
+      if (name === '$timestamp') {
+        return '${Date.now()}';
+      }
+      if (name === '$randomInt') {
+        return '${Math.floor(Math.random() * 1000)}';
+      }
+      return `\${Cypress.env('${name}')}`;
+    });
   },
 
   /**

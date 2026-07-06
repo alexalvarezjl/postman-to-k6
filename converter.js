@@ -205,10 +205,21 @@ const PostmanConverter = {
     };
   },
 
-  /** Replace {{varName}} with ${VARNAME} for template literals */
+  /** Replace {{varName}} with ${VARNAME} for template literals, handling dynamic variables */
   resolvePostmanVar(str) {
     if (!str) return '';
-    return str.replace(/\{\{(\w+)\}\}/g, (_, name) => `\${${this.sanitizeVarName(name)}}`);
+    return str.replace(/\{\{([$\w]+)\}\}/g, (_, name) => {
+      if (name === '$guid') {
+        return '${crypto.randomUUID()}';
+      }
+      if (name === '$timestamp') {
+        return '${Date.now()}';
+      }
+      if (name === '$randomInt') {
+        return '${Math.floor(Math.random() * 1000)}';
+      }
+      return `\${${this.sanitizeVarName(name)}}`;
+    });
   },
 
   /** Sanitize to valid JS identifier */
