@@ -1,11 +1,11 @@
-# ⚡ Postman / cURL → k6 Converter
+# ⚡ Postman / cURL → k6 / Cypress / Playwright Converter
 
-> Convierte colecciones de Postman o comandos cURL (Bash) en scripts de k6 listos para ejecutar pruebas de carga y performance, **sin escribir una sola línea de código** y **100% en el navegador**.
+> Convierte colecciones de Postman o comandos cURL (Bash) en scripts listos para pruebas de carga (k6) o automatización funcional (Cypress y Playwright), **sin escribir una sola línea de código** y **100% en el navegador**.
 
-![Demo](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)
+![Demo](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 ![HTML](https://img.shields.io/badge/stack-HTML%20%2B%20Vanilla%20JS-orange?style=flat-square)
-![k6](https://img.shields.io/badge/target-k6%20script-7d64ff?style=flat-square)
+![k6](https://img.shields.io/badge/target-k6%20%7C%20Cypress%20%7C%20Playwright-7d64ff?style=flat-square)
 
 ---
 
@@ -47,21 +47,21 @@ No requiere servidor, backend ni instalación. Abre el `index.html` en cualquier
 |---|---|
 | 🗂️ **Importación flexible** | Arrastra y suelta el JSON o pégalo directamente en el editor |
 | ✅ **Soporte v2.0 y v2.1** | Compatible con ambas versiones del formato de colección de Postman |
-| 🖥️ **Soporte cURL** | Pega comandos cURL (Bash) completos y conviértelos directamente a k6 |
+| 🖥️ **Soporte cURL** | Pega comandos cURL (Bash) completos y conviértelos directamente a k6, Cypress o Playwright |
 | 🔍 **Selección de requests** | Elige cuáles requests incluir en el script generado |
 | 📁 **Soporte de carpetas** | Respeta la jerarquía de folders de la colección, con colapso/expansión |
-| 🚀 **Tres modos de carga** | Simple, Stages (ramp-up/down) y Ramping VUs con executor avanzado |
-| 🎯 **Thresholds configurables** | Define SLOs sobre `http_req_duration`, `http_req_failed`, `http_req_waiting` e `iterations` |
-| 🔐 **Conversión de autenticación** | Soporta Bearer Token, Basic Auth y API Key |
+| 🚀 **Tres modos de carga (k6)** | Simple, Stages (ramp-up/down) y Ramping VUs con executor avanzado |
+| 🎯 **Thresholds configurables (k6)** | Define SLOs sobre `http_req_duration`, `http_req_failed`, `http_req_waiting` e `iterations` |
+| 🔐 **Conversión de autenticación** | Soporta Bearer Token, Basic Auth (con codificación UTF-8 segura) y API Key |
 | 📦 **Cuerpos de request** | Convierte `raw` (JSON/XML/text), `urlencoded`, `form-data` y `GraphQL` |
-| 🔄 **Variables Postman** | Detecta `{{variables}}` y las exporta como constantes JS |
+| 🔄 **Variables y Dinámicas** | Mapea `{{var}}` a constantes y traduce variables dinámicas globales (`{{$guid}}` $\rightarrow$ `crypto.randomUUID()`, `{{$timestamp}}` $\rightarrow$ `Date.now()`, `{{$randomInt}}`) |
 | 🌐 **Base URL automática** | Detecta o permite sobreescribir la URL base de la colección |
-| ⏱️ **Sleep configurable** | Agrega pausa entre requests para simular comportamiento real de usuarios |
-| 🧩 **Arquitectura modular** | Generación de scripts con `setup()` y helpers externos (`auth.js`, `env.js`) |
-| 📊 **Reporte HTML** | Integración nativa con `handleSummary()` usando `k6-reporter` |
-| 🎨 **Syntax highlighting** | Resaltado de sintaxis JavaScript/k6 en el preview del script |
-| 📋 **Copia / Múltiples Descargas** | Copia, descarga como 1 script consolidado o exporta 1 script por request en `.zip` |
-| 🔒 **100% local** | Ningún dato sale de tu navegador. Todo se procesa en el cliente |
+| ⏱️ **Sleep configurable** | Agrega pausa entre requests para simular think time |
+| 🌲 **Cypress (JS/TS)** | Genera archivos `.cy.js`/`.cy.ts` con comandos personalizados de autenticación y estructura describe/it |
+| 🎭 **Playwright (JS/TS)** | Genera scripts `.spec.js`/`.spec.ts` estructurados para pruebas de API de Playwright |
+| 💾 **Persistencia y Temas (UX)** | Guarda la preferencia de framework y se adapta automáticamente al tema claro/oscuro del sistema |
+| 🛡️ **Seguridad (CSP)** | Ejecución 100% local. Inyección de Content Security Policy estricta (`connect-src 'none'`) para impedir exfiltración |
+| 📋 **Copia / Descargas** | Copia, descarga como 1 script consolidado o exporta la estructura de proyecto completa en `.zip` |
 
 ---
 
@@ -69,11 +69,15 @@ No requiere servidor, backend ni instalación. Abre el `index.html` en cualquier
 
 ```
 postman-to-k6/
-├── index.html      # Estructura HTML + UI de 4 pasos
-├── style.css       # Sistema de diseño completo (dark mode, tokens CSS)
-├── curl-parser.js  # Lógica de parsing de comandos cURL
-├── converter.js    # Lógica de parsing y generación de código k6
-└── app.js          # Orquestación UI, eventos, estado y renderizado
+├── index.html           # UI de 4 pasos (Wizard SPA) con directiva CSP
+├── style.css            # Sistema de diseño con variables CSS y soporte responsive y claro/oscuro
+├── curl-parser.js       # Lógica de parsing de comandos cURL
+├── converter.js         # PARSER: Procesa JSON y genera el Intermediate Object (IOI)
+├── generators/          # Capa de generación de código (generators)
+│   ├── k6-generator.js        # Lógica de generación para k6
+│   ├── cypress-generator.js   # Lógica de generación para Cypress (JS/TS)
+│   └── playwright-generator.js# Lógica de generación para Playwright (JS/TS)
+└── app.js               # Orquestación de UI, eventos, persistencia y estado
 ```
 
 ### Separación de responsabilidades
@@ -312,15 +316,15 @@ Si la autenticación usa variables Postman (`{{bearerToken}}`), estas se convier
 
 ---
 
-## 🧪 Conversión de tests Postman → checks k6 y Cypress
+## 🧪 Conversión de tests Postman → checks k6, Cypress y Playwright
 
-El sistema incorpora un **Motor Semántico de Aserciones** en el parser (`converter.js`) que analiza los scripts de test de Postman y extrae las validaciones a un modelo de datos independiente. Los generadores de k6 y Cypress consumen este modelo para crear código nativo:
+El sistema incorpora un **Motor Semántico de Aserciones** en el parser (`converter.js`) que analiza los scripts de test de Postman y extrae las validaciones a un modelo de datos independiente. Los generadores de k6, Cypress y Playwright consumen este modelo para crear código nativo:
 
-| Postman test (Origen) | k6 check generado | Cypress generado |
-|---|---|---|
-| `pm.response.to.have.status(200)` | `(r) => r.status === 200` | `expect(response.status).to.eq(200)` |
-| `pm.expect(pm.response.responseTime).to.be.below(500)` | `(r) => r.timings.duration < 500` | `expect(response.duration).to.be.below(500)` |
-| `pm.response.to.be.json` | `(r) => r.headers['Content-Type'].includes('json')` | `expect(response.headers['content-type']).to.include('json')` |
+| Postman test (Origen) | k6 check generado | Cypress generado | Playwright generado |
+|---|---|---|---|
+| `pm.response.to.have.status(200)` | `(r) => r.status === 200` | `expect(response.status).to.eq(200)` | `expect(response.status()).toBe(200)` |
+| `pm.expect(pm.response.responseTime).to.be.below(500)` | `(r) => r.timings.duration < 500` | `expect(response.duration).to.be.below(500)` | `// Check response time: expect below 500ms` |
+| `pm.response.to.be.json` | `(r) => r.headers['Content-Type'].includes('json')` | `expect(response.headers['content-type']).to.include('json')` | `expect(response.headers()['content-type']).toContain('json')` |
 
 Los checks de k6 se agrupan por request y alimentan una métrica `Rate` personalizada (`errorRate`):
 
@@ -339,18 +343,23 @@ errorRate.add(!ok_abc123);
 
 ## 🌐 Variables de entorno Postman
 
-Las variables `{{varName}}` de Postman se convierten en constantes JavaScript que pueden sobreescribirse con variables de entorno en tiempo de ejecución:
+Las variables `{{varName}}` de Postman se convierten de forma automática dependiendo del framework seleccionado:
 
-```js
-// Colección original usa {{baseUrl}} y {{apiKey}}
-const BASE_URL = 'https://api.miapp.com';
-const APIKEY = __ENV.APIKEY || '';
-```
-
-Al ejecutar k6 puedes inyectar valores:
-```bash
-k6 run -e APIKEY=mi-token-secreto load-test.js
-```
+* **k6:** Se exportan como constantes parametrizadas a través del entorno de ejecución:
+  ```js
+  const APIKEY = __ENV.APIKEY || '';
+  ```
+  Ejecución: `k6 run -e APIKEY=mi-token load-test.js`
+* **Cypress:** Se mapean como variables de entorno de Cypress:
+  ```js
+  Cypress.env('apiKey')
+  ```
+  Ejecución: `CYPRESS_apiKey=mi-token npx cypress run`
+* **Playwright:** Se mapean a variables de entorno del sistema de Node.js:
+  ```js
+  process.env.APIKEY || ''
+  ```
+  Ejecución: `APIKEY=mi-token npx playwright test`
 
 ---
 
@@ -428,27 +437,13 @@ Sistema de diseño completo con:
 Parser dedicado que convierte un comando cURL (Bash) crudo en el objeto de request normalizado que el generador puede entender. Maneja división de tokens, strings multilínea con escapes, y flags cortas/largas.
 
 ### `converter.js` (~580 líneas)
-Motor de conversión con API pública en `window.PostmanConverter`:
+Motor de conversión (Parser) que procesa colecciones JSON de Postman y comandos cURL, traduciéndolos al Intermediate Object Interface (IOI) estandarizado. Contiene aserciones y detectores de variables.
 
-```
-PostmanConverter
-├── extractRequests(items, folderPath)   → { folders, requests }
-├── generateK6Script(collection, config) → string (script k6)
-├── generateK6ScriptsPerRequest(col, cfg)→ Array<{filename, content}>
-├── highlightK6(code)                    → string (HTML con spans)
-└── detectBaseUrl(requests)              → string
-```
-
-**Funciones internas:**
-- `normalizeRequest(item, folder)` — Normaliza un item de Postman al modelo interno
-- `extractK6Checks(script, checks)` — Convierte tests Postman a checks k6
-- `generateOptions(config)` — Genera el bloque `options` según el modo
-- `generateRequestBlock(req, baseUrl, config)` — Genera el bloque de código para una request
-- `buildUrlExpression(req, baseUrl)` — Construye la expresión de URL con template literals
-- `resolvePostmanVar(str)` — Reemplaza `{{var}}` por `${VAR}`
-- `sanitizeVarName(name)` — Convierte nombres a identificadores JS válidos
-- `extractVariables(requests, collectionVars)` — Detecta todas las variables usadas
-- `groupByFolder(requests)` — Agrupa requests por carpeta
+### `generators/` (Capa de Generación)
+Módulos dedicados que consumen el IOI y emiten código de pruebas en sintaxis nativa:
+- **`k6-generator.js`:** Genera scripts modularizados de k6 con VU's, stages, thresholds y exporta a InfluxDB/Grafana.
+- **`cypress-generator.js`:** Genera scripts Cypress de pruebas de API funcionales en JS o TS, estructurados en bloques describe/it.
+- **`playwright-generator.js`:** Genera suites de pruebas de API de Playwright en JS o TS, importando test/expect y estructurado para integración continua.
 
 ### `app.js` (~485 líneas)
 Orquestación de la UI:
