@@ -6,7 +6,7 @@ Este documento detalla las mejoras técnicas identificadas para fortalecer la se
 
 ## 🏛️ Arquitectura y Escalabilidad
 
-- [ ] **Soporte de Playwright:** Siguiendo el mismo patrón de `generators/playwright-generator.js`, podrías añadir soporte para este framework en menos de una hora gracias al Intermediate Object Interface (IOI) que definimos.
+- [x] **Soporte de Playwright:** Siguiendo el mismo patrón de `generators/playwright-generator.js`, se añadió soporte para este framework en formato de scripts consolidado y descargas de proyecto `.zip`. *(Completado)*.
 - [ ] **Manejo de Archivos en Form-Data:** Implementar la lógica para que Cypress o k6 puedan simular la subida de archivos si el Intermediate Object detecta campos de tipo `file`.
 - [x] **Evolución del IOI:** Refinar el objeto intermedio para incluir metadatos de configuración de entorno y scripts de pre-solicitud. *(Completado: IOI ahora incluye `preRequestScript` y `assertions`)*.
 - [x] **Mapeo de Aserciones Complejas:** Mejorar el traductor de `pm.expect` para manejar comparaciones profundas de objetos JSON, reduciendo la necesidad de revisión manual. *(Completado: Implementado Motor Semántico de Aserciones en el IOI)*.
@@ -16,7 +16,7 @@ Este documento detalla las mejoras técnicas identificadas para fortalecer la se
 ## 🛠️ Robustez y Funcionalidad
 
 - [ ] **Pre-request Scripts Avanzados:** Implementar la conversión de lógica de pre-solicitud hacia la función `setup()` en k6 y comandos personalizados en Cypress.
-- [ ] **Variables Dinámicas Globales:** Mapear variables dinámicas de Postman (ej: `{{$guid}}`, `{{$timestamp}}`) a sus equivalentes nativos en todos los frameworks soportados.
+- [x] **Variables Dinámicas Globales:** Mapear variables dinámicas de Postman (ej: `{{$guid}}`, `{{$timestamp}}`, `{{$randomInt}}`) a sus equivalentes nativos en todos los frameworks soportados. *(Completado)*.
 - [x] **Soporte UTF-8 en Auth:** Corregir la limitación de `btoa` en credenciales de Basic Auth para soportar caracteres especiales (Unicode/UTF-8). *(Completado: Implementado método `safeBtoa` con `TextEncoder`)*.
 - [ ] **Validación de Esquema Postman:** Implementar una validación estricta del JSON de entrada usando el esquema oficial de Postman Collection v2.x.
 
@@ -24,7 +24,7 @@ Este documento detalla las mejoras técnicas identificadas para fortalecer la se
 
 ## 🛡️ Seguridad
 
-- [ ] **Implementar Content Security Policy (CSP):** Añadir un meta tag CSP en `index.html` para restringir la carga de scripts externos y prevenir exfiltración de datos.
+- [x] **Implementar Content Security Policy (CSP):** Añadir un meta tag CSP en `index.html` para restringir la carga de scripts externos y prevenir exfiltración de datos. *(Completado: Inyectado con `connect-src 'none'`)*.
 - [ ] **Sanitización Robusta:** Migrar del uso de `innerHTML` a `createElement` / `textContent` en la manipulación dinámica del DOM en `app.js` para eliminar riesgos de XSS residuales.
 - [ ] **Gestión de Dependencias:** Descarga local de `JSZip` y evaluación de versiones fijas (hashes/SRI) para módulos externos de k6.
 
