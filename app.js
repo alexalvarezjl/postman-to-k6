@@ -172,11 +172,37 @@ DOM.targetBtns.forEach(btn => {
         : (target === 'cypress' ? 'https://docs.cypress.io/' : 'https://playwright.dev/');
     }
     
-    state.scriptFilename = target === 'k6' 
-      ? 'load-test.js' 
-      : (target === 'cypress'
-          ? (isTS ? 'cypress-test.cy.ts' : 'cypress-test.cy.js')
-          : (isTS ? 'playwright-test.spec.ts' : 'playwright-test.spec.js'));
+    // Update Step 2 continue button text if it exists
+    const btnContinue = $('btn-continue-step3');
+    if (btnContinue) {
+      const frameworkName = target === 'k6' ? 'k6' : (target === 'cypress' ? 'Cypress' : 'Playwright');
+      btnContinue.innerHTML = `<span>Configurar ${frameworkName}</span><span class="btn-icon">\u2192</span>`;
+    }
+
+    if (state.collection) {
+      if (state.collection.requests.length === 1) {
+        const req = state.collection.requests[0];
+        const slug = req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'request';
+        state.scriptFilename = target === 'k6' 
+          ? `${slug}-test.js` 
+          : (target === 'cypress' 
+              ? `${slug}-test.cy.${isTS ? 'ts' : 'js'}`
+              : `${slug}-test.spec.${isTS ? 'ts' : 'js'}`);
+      } else {
+        const baseName = state.collection.name.replace(/\s+/g, '-').toLowerCase() || 'api';
+        state.scriptFilename = target === 'k6' 
+          ? `${baseName}-test.js`
+          : (target === 'cypress'
+              ? `${baseName}-test.cy.${isTS ? 'ts' : 'js'}`
+              : `${baseName}-test.spec.${isTS ? 'ts' : 'js'}`);
+      }
+    } else {
+      state.scriptFilename = target === 'k6' 
+        ? 'load-test.js' 
+        : (target === 'cypress'
+            ? (isTS ? 'cypress-test.cy.ts' : 'cypress-test.cy.js')
+            : (isTS ? 'playwright-test.spec.ts' : 'playwright-test.spec.js'));
+    }
   });
 });
 
@@ -423,6 +449,9 @@ function renderRequests() {
     });
   });
 
+  // Attach name input events
+  attachNameEditListeners();
+
   // Show summary
   DOM.collSummary.classList.remove('hidden');
   DOM.previewActions.classList.remove('hidden');
@@ -439,10 +468,32 @@ function requestRowHTML(r) {
     <div class="request-row selected" data-id="${r.id}">
       <input type="checkbox" class="request-check" data-id="${r.id}" ${r.selected ? 'checked' : ''} id="chk-${r.id}" />
       <span class="method-badge ${methodCls}">${escHtml(r.method)}</span>
-      <span class="request-name">${escHtml(r.name)}</span>
+      <input type="text" class="request-name-input" data-id="${r.id}" value="${escHtml(r.name)}" placeholder="Nombre de la request" />
       <span class="request-url">${escHtml(r.url)}</span>
     </div>
   `;
+}
+
+function attachNameEditListeners() {
+  DOM.requestsList.querySelectorAll('.request-name-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const id = input.dataset.id;
+      const req = state.collection.requests.find(r => r.id === id);
+      if (req) {
+        req.name = input.value;
+        // If there's only 1 request, update script filename as well
+        if (state.collection.requests.length === 1) {
+          const slug = req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'request';
+          const isTS = (state.targetFramework === 'cypress' || state.targetFramework === 'playwright') && DOM.cfgCypressTs && DOM.cfgCypressTs.checked;
+          state.scriptFilename = state.targetFramework === 'k6' 
+            ? `${slug}-test.js` 
+            : (state.targetFramework === 'cypress' 
+                ? `${slug}-test.cy.${isTS ? 'ts' : 'js'}`
+                : `${slug}-test.spec.${isTS ? 'ts' : 'js'}`);
+        }
+      }
+    });
+  });
 }
 
 function updateSummary() {
@@ -457,9 +508,11 @@ function addContinueToStep3() {
   if (step3BtnAdded) return;
   step3BtnAdded = true;
   const btn = document.createElement('button');
+  btn.id = 'btn-continue-step3';
   btn.className = 'btn btn-primary';
   btn.style.marginTop = '20px';
-  btn.innerHTML = `<span>Configurar ${state.targetFramework}</span><span class="btn-icon">\u2192</span>`;
+  const frameworkName = state.targetFramework === 'k6' ? 'k6' : (state.targetFramework === 'cypress' ? 'Cypress' : 'Playwright');
+  btn.innerHTML = `<span>Configurar ${frameworkName}</span><span class="btn-icon">\u2192</span>`;
   btn.addEventListener('click', () => {
     activateStep(3);
     scrollToEl(DOM.stepConfig);
@@ -525,7 +578,7 @@ function renderCurlPreview(req) {
   DOM.requestsList.innerHTML = `
     <div class="request-row selected curl-preview" data-id="${req.id}">
       <span class="method-badge ${methodCls}">${escHtml(req.method)}</span>
-      <span class="request-name">${escHtml(req.name)}</span>
+      <input type="text" class="request-name-input" data-id="${req.id}" value="${escHtml(req.name)}" placeholder="Nombre de la request" />
       <span class="request-url">${escHtml(req.url)}</span>
     </div>
     <div class="curl-preview-detail">
@@ -540,6 +593,7 @@ function renderCurlPreview(req) {
   DOM.summarySelected.textContent = '1';
   DOM.summaryFolders.textContent  = '0';
 
+  attachNameEditListeners();
   addContinueToStep3();
 }
 
